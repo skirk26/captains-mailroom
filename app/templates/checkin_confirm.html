@@ -41,22 +41,58 @@
         </span>
       {% endif %}
 
-      <!-- Display-only for now: saving and recipient search come in later tasks -->
+      <!-- Display-only for now: saving comes in the next task -->
       <form>
         <div class="mb-3">
           <label for="tracking" class="form-label">Tracking number</label>
           <input type="text" class="form-control form-control-lg tracking-input" id="tracking" name="tracking"
-                 value="{{ tracking }}" autocomplete="off" autocapitalize="characters" autocorrect="off"
-                 spellcheck="false">
+                 value="{{ tracking }}" maxlength="64" autocomplete="off" autocapitalize="characters"
+                 autocorrect="off" spellcheck="false" required>
           <div class="form-text">Check this matches the label. Fix any misread characters.</div>
+          <div class="invalid-feedback">Enter the tracking number.</div>
+        </div>
+
+        <div class="mb-3">
+          <label for="carrier" class="form-label">Carrier</label>
+          <select class="form-select form-select-lg" id="carrier" name="carrier" required>
+            <option value="" {{ "selected" if not guessed_carrier }}>Select carrier</option>
+            {% for carrier in carriers %}
+              <option value="{{ carrier }}" {{ "selected" if carrier == guessed_carrier }}>{{ carrier }}</option>
+            {% endfor %}
+          </select>
+          <div class="invalid-feedback">Choose the carrier.</div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label for="first-name" class="form-label">First name (optional)</label>
+            <input type="text" class="form-control form-control-lg" id="first-name" name="first_name"
+                   maxlength="60" autocomplete="off" autocapitalize="words" spellcheck="false">
+          </div>
+          <div class="col-6">
+            <label for="last-name" class="form-label">Last name (optional)</label>
+            <input type="text" class="form-control form-control-lg" id="last-name" name="last_name"
+                   maxlength="60" autocomplete="off" autocapitalize="words" spellcheck="false">
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="box-number" class="form-label">Box number (optional)</label>
+          {# pattern only checks non-empty values: blank passes, anything else must be 1000-5199 #}
+          <input type="text" class="form-control form-control-lg" id="box-number" name="box_number"
+                 inputmode="numeric" pattern="1[0-9]{3}|[2-4][0-9]{3}|5[01][0-9]{2}" maxlength="4"
+                 autocomplete="off">
+          <div class="invalid-feedback">Box numbers run from 1000 to 5199.</div>
         </div>
 
         <div class="mb-4">
-          <label for="recipient" class="form-label">Recipient (search coming next)</label>
-          <input type="text" class="form-control form-control-lg" id="recipient" name="recipient" disabled>
+          <label for="notes" class="form-label">Notes (optional)</label>
+          <textarea class="form-control form-control-lg" id="notes" name="notes" rows="3" maxlength="500"
+                    placeholder="e.g., Package arrived damaged"></textarea>
         </div>
 
         <button type="submit" class="btn btn-navy btn-lg w-100" disabled>Save &amp; Continue</button>
+        <p class="form-text text-center mt-2 mb-0">Fill in at least a name, a box number, or a note.</p>
       </form>
     </main>
   </div>

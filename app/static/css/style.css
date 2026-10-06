@@ -184,3 +184,20 @@ body {
   font-family: var(--bs-font-monospace);
   letter-spacing: 0.03em;
 }
+
+/* Flag invalid fields once the user has edited them (not on page load).
+   Bootstrap only styles .is-invalid / .was-validated, so map :user-invalid onto the same look. */
+.form-control:user-invalid,
+.form-select:user-invalid {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.form-control:user-invalid:focus,
+.form-select:user-invalid:focus {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.25);
+}
+
+.form-control:user-invalid ~ .invalid-feedback,
+.form-select:user-invalid ~ .invalid-feedback {
+  display: block;
+}
