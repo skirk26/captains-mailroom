@@ -33,8 +33,6 @@ const reader = document.getElementById("reader");
 const scanFrame = document.getElementById("scan-frame");
 const messageTitle = document.getElementById("scan-message-title");
 const messageBody = document.getElementById("scan-message-body");
-const resultText = document.getElementById("scan-result-text");
-const scanAgainButton = document.getElementById("scan-again");
 
 function createScanner() {
   return new Html5Qrcode("reader", {
@@ -135,8 +133,9 @@ function onScanSuccess(decodedText) {
   handlingResult = true;
 
   console.log("Scanned:", decodedText);
-  resultText.textContent = decodedText;
-  stopScanning().then(() => setState("scanned"));
+  const confirmUrl = new URL(page.dataset.confirmUrl, window.location.href);
+  confirmUrl.searchParams.set("tracking", decodedText); // URL-encodes the value
+  stopScanning().then(() => window.location.assign(confirmUrl));
 }
 
 function showCameraError(err) {
@@ -170,7 +169,6 @@ function showCameraError(err) {
   }
 }
 
-scanAgainButton.addEventListener("click", startScanning);
 window.addEventListener("resize", applyCoverScale);
 
 // Release the camera when leaving the page (including into the back/forward cache)
@@ -178,7 +176,7 @@ window.addEventListener("pagehide", stopScanning);
 
 // Coming back with the Back button restores the page from cache with the camera off
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted && page.dataset.state !== "scanned" && page.dataset.state !== "error") {
+  if (event.persisted && page.dataset.state !== "error") {
     startScanning();
   }
 });

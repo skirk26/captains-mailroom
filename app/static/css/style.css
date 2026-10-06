@@ -28,6 +28,9 @@ body {
   --bs-btn-active-color: #fff;
   --bs-btn-active-bg: var(--cm-navy-dark);
   --bs-btn-active-border-color: var(--cm-navy-dark);
+  --bs-btn-disabled-color: #fff;
+  --bs-btn-disabled-bg: var(--cm-navy);
+  --bs-btn-disabled-border-color: var(--cm-navy);
   --bs-btn-focus-shadow-rgb: 28, 43, 74;
 }
 
@@ -162,20 +165,8 @@ body {
   text-align: center;
 }
 
-.scan-result {
-  display: none;
-  border: none;
-  border-top: 4px solid var(--cm-gold);
-}
-
-.scan-result-text {
-  font-family: var(--bs-font-monospace);
-  overflow-wrap: anywhere; /* long tracking numbers must not overflow on phones */
-}
-
 /* Page states, set by scanner.js on #checkin via data-state */
 [data-state="scanning"] .scan-placeholder,
-[data-state="scanned"] .scan-placeholder,
 [data-state="error"] .scan-frame {
   display: none;
 }
@@ -184,11 +175,12 @@ body {
   display: flex;
 }
 
-[data-state="scanned"] .scan-result {
-  display: block;
-}
-
-[data-state="scanned"] .scan-instruction,
 [data-state="error"] .scan-instruction {
   display: none;
+}
+
+/* Check-in confirm page */
+.tracking-input {
+  font-family: var(--bs-font-monospace);
+  letter-spacing: 0.03em;
 }

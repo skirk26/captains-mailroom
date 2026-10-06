@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C2B4A">
+  <title>Confirm Check-In · Captain's Mail</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="page-shell d-flex flex-column">
+    <header class="app-header d-flex align-items-center px-2">
+      <a href="{{ url_for('checkin.checkin') }}" class="header-back" aria-label="Back to scanner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+      <h1 class="h5 fw-semibold mb-0 ms-1">Confirm Check-In</h1>
+    </header>
+
+    <main class="flex-grow-1 px-3 pt-4 pb-4">
+      {% if entered_manually %}
+        <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle
+                     d-inline-flex align-items-center gap-1 px-3 py-2 mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+          </svg>
+          Entered manually
+        </span>
+      {% else %}
+        <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle
+                     d-inline-flex align-items-center gap-1 px-3 py-2 mb-4">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          Barcode scanned
+        </span>
+      {% endif %}
+
+      <!-- Display-only for now: saving and recipient search come in later tasks -->
+      <form>
+        <div class="mb-3">
+          <label for="tracking" class="form-label">Tracking number</label>
+          <input type="text" class="form-control form-control-lg tracking-input" id="tracking" name="tracking"
+                 value="{{ tracking }}" autocomplete="off" autocapitalize="characters" autocorrect="off"
+                 spellcheck="false">
+          <div class="form-text">Check this matches the label. Fix any misread characters.</div>
+        </div>
+
+        <div class="mb-4">
+          <label for="recipient" class="form-label">Recipient (search coming next)</label>
+          <input type="text" class="form-control form-control-lg" id="recipient" name="recipient" disabled>
+        </div>
+
+        <button type="submit" class="btn btn-navy btn-lg w-100" disabled>Save &amp; Continue</button>
+      </form>
+    </main>
+  </div>
+</body>
+</html>

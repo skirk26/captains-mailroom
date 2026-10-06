@@ -20,7 +20,16 @@
       <h1 class="h5 fw-semibold mb-0 ms-1">Check In</h1>
     </header>
 
-    <main id="checkin" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting">
+    <main id="checkin" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting"
+          data-confirm-url="{{ url_for('checkin.confirm') }}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category != 'message' else 'secondary' }} py-2 mb-3" role="alert">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endwith %}
+
       <div id="viewfinder" class="scan-viewfinder flex-grow-1">
         <!-- html5-qrcode empties #reader on start/stop, so overlays live beside it -->
         <div id="reader"></div>
@@ -37,18 +46,21 @@
         </div>
       </div>
 
-      <div class="scan-result card mt-3" aria-live="polite">
-        <div class="card-body">
-          <p class="small text-muted mb-1">Scanned:</p>
-          <p id="scan-result-text" class="scan-result-text fw-semibold mb-3"></p>
-          <button type="button" id="scan-again" class="btn btn-navy w-100">Scan again</button>
-        </div>
-      </div>
-
       <p class="scan-instruction text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
       <p class="text-center mb-0">
-        <a href="#" class="link-gold">Can't scan? Enter tracking number manually</a>
+        <a href="#manual-entry" id="manual-entry-toggle" class="link-gold"
+           aria-controls="manual-entry" aria-expanded="false">Can't scan? Enter tracking number manually</a>
       </p>
+
+      <form id="manual-entry" class="mt-3" action="{{ url_for('checkin.confirm') }}" method="get" hidden>
+        <input type="hidden" name="source" value="manual">
+        <label for="manual-tracking" class="form-label">Tracking number</label>
+        <div class="d-flex gap-2">
+          <input type="text" class="form-control form-control-lg" id="manual-tracking" name="tracking"
+                 autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+          <button type="submit" class="btn btn-navy btn-lg">Continue</button>
+        </div>
+      </form>
     </main>
   </div>
 
@@ -56,5 +68,7 @@
           integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+"
           crossorigin="anonymous"></script>
   <script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+  <!-- Separate from scanner.js so the manual fallback still works if the scanner fails to load -->
+  <script src="{{ url_for('static', filename='js/manual_entry.js') }}"></script>
 </body>
 </html>
