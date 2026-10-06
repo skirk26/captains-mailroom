@@ -1,19 +1,14 @@
-from flask_login import current_user
+from flask import redirect, url_for
 
 from app import create_app
 
 app = create_app()
 
 
-# TEMPORARY: confirms the server runs. Remove once app/routes/ blueprints exist.
+# Login redirects to "/", so send signed-in staff on to the dashboard
 @app.route("/")
-def hello():
-    if current_user.is_authenticated:
-        return (
-            f"Hello, Captain's Mail. Signed in as {current_user.username}. "
-            '<a href="/logout">Sign out</a>'
-        )
-    return 'Hello, Captain\'s Mail. <a href="/login">Sign in</a>'
+def index():
+    return redirect(url_for("dashboard.dashboard"))
 
 
 if __name__ == "__main__":

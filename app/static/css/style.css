@@ -53,3 +53,83 @@ body {
   letter-spacing: 0.15em;
   font-size: 0.8rem;
 }
+
+.link-gold {
+  color: var(--cm-gold);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.link-gold:hover,
+.link-gold:focus {
+  color: var(--cm-gold);
+  text-decoration: underline;
+}
+
+/* App pages (header + content) */
+.page-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-header {
+  height: 56px;
+  flex-shrink: 0;
+  background-color: var(--cm-navy);
+  color: #fff;
+}
+
+.header-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; /* comfortable tap target */
+  height: 44px;
+  color: #fff;
+  border-radius: 50%;
+}
+
+.header-back:hover,
+.header-back:focus {
+  color: var(--cm-gold);
+}
+
+/* Check-in page */
+.scan-viewfinder {
+  position: relative;
+  min-height: 60vh;
+  min-height: 60dvh;
+  background-color: var(--cm-navy);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.scan-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 75%;
+  max-width: 300px;
+  aspect-ratio: 3 / 2; /* shipping labels are wider than tall */
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-corner {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 0 solid var(--cm-gold);
+}
+
+.scan-corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
+.scan-corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 8px; }
+.scan-corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 8px; }
+.scan-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
+
+.scan-placeholder {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.85rem;
+}

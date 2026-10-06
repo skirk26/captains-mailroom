@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C2B4A">
+  <title>Check In · Captain's Mail</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <div class="page-shell d-flex flex-column">
+    <header class="app-header d-flex align-items-center px-2">
+      <a href="{{ url_for('dashboard.dashboard') }}" class="header-back" aria-label="Back to dashboard">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+      <h1 class="h5 fw-semibold mb-0 ms-1">Check In</h1>
+    </header>
+
+    <main class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4">
+      <div id="reader" class="scan-viewfinder flex-grow-1">
+        <div class="scan-frame" aria-hidden="true">
+          <span class="scan-corner scan-corner-tl"></span>
+          <span class="scan-corner scan-corner-tr"></span>
+          <span class="scan-corner scan-corner-bl"></span>
+          <span class="scan-corner scan-corner-br"></span>
+          <span class="scan-placeholder">Camera preview</span>
+        </div>
+      </div>
+
+      <p class="text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
+      <p class="text-center mb-0">
+        <a href="#" class="link-gold">Can't scan? Enter tracking number manually</a>
+      </p>
+    </main>
+  </div>
+</body>
+</html>
