@@ -20,22 +20,41 @@
       <h1 class="h5 fw-semibold mb-0 ms-1">Check In</h1>
     </header>
 
-    <main class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4">
-      <div id="reader" class="scan-viewfinder flex-grow-1">
-        <div class="scan-frame" aria-hidden="true">
+    <main id="checkin" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting">
+      <div id="viewfinder" class="scan-viewfinder flex-grow-1">
+        <!-- html5-qrcode empties #reader on start/stop, so overlays live beside it -->
+        <div id="reader"></div>
+        <div id="scan-frame" class="scan-frame" aria-hidden="true">
           <span class="scan-corner scan-corner-tl"></span>
           <span class="scan-corner scan-corner-tr"></span>
           <span class="scan-corner scan-corner-bl"></span>
           <span class="scan-corner scan-corner-br"></span>
           <span class="scan-placeholder">Camera preview</span>
         </div>
+        <div class="scan-message" role="alert">
+          <p id="scan-message-title" class="fw-semibold mb-1"></p>
+          <p id="scan-message-body" class="small mb-0"></p>
+        </div>
       </div>
 
-      <p class="text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
+      <div class="scan-result card mt-3" aria-live="polite">
+        <div class="card-body">
+          <p class="small text-muted mb-1">Scanned:</p>
+          <p id="scan-result-text" class="scan-result-text fw-semibold mb-3"></p>
+          <button type="button" id="scan-again" class="btn btn-navy w-100">Scan again</button>
+        </div>
+      </div>
+
+      <p class="scan-instruction text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
       <p class="text-center mb-0">
         <a href="#" class="link-gold">Can't scan? Enter tracking number manually</a>
       </p>
     </main>
   </div>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+          integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+"
+          crossorigin="anonymous"></script>
+  <script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
 </body>
 </html>

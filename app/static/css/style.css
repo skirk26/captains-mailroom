@@ -104,13 +104,29 @@ body {
   overflow: hidden;
 }
 
-.scan-frame {
-  position: absolute;
+/* scanner.js scales this with a transform so the video covers the viewfinder.
+   !important beats the position: relative the library sets inline. */
+#reader {
+  position: absolute !important;
   top: 50%;
   left: 50%;
-  width: 75%;
-  max-width: 300px;
-  aspect-ratio: 3 / 2; /* shipping labels are wider than tall */
+  transform: translate(-50%, -50%);
+}
+
+/* The library draws its own white corner markers; the gold brackets replace them */
+#qr-shaded-region > div {
+  display: none !important;
+}
+
+/* scanner.js reads this box's on-screen size and scans exactly that region */
+.scan-frame {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  width: 250px; /* wider than tall, like shipping barcodes */
+  max-width: calc(100% - 2rem);
+  height: 150px;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;
@@ -132,4 +148,47 @@ body {
 .scan-placeholder {
   color: rgba(255, 255, 255, 0.45);
   font-size: 0.85rem;
+}
+
+.scan-message {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1.5rem;
+  color: #fff;
+  text-align: center;
+}
+
+.scan-result {
+  display: none;
+  border: none;
+  border-top: 4px solid var(--cm-gold);
+}
+
+.scan-result-text {
+  font-family: var(--bs-font-monospace);
+  overflow-wrap: anywhere; /* long tracking numbers must not overflow on phones */
+}
+
+/* Page states, set by scanner.js on #checkin via data-state */
+[data-state="scanning"] .scan-placeholder,
+[data-state="scanned"] .scan-placeholder,
+[data-state="error"] .scan-frame {
+  display: none;
+}
+
+[data-state="error"] .scan-message {
+  display: flex;
+}
+
+[data-state="scanned"] .scan-result {
+  display: block;
+}
+
+[data-state="scanned"] .scan-instruction,
+[data-state="error"] .scan-instruction {
+  display: none;
 }
