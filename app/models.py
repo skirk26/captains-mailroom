@@ -33,8 +33,8 @@ def load_user(user_id):
 class Recipient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     # Names are optional: a label may only show a box number
-    first_name = db.Column(db.String(60), nullable=True)
-    last_name = db.Column(db.String(60), nullable=True)
+    first_name = db.Column(db.String(50), nullable=True)
+    last_name = db.Column(db.String(50), nullable=True)
     email = db.Column(db.String(120))
     mailbox_number = db.Column(db.String(20))
 
@@ -50,7 +50,8 @@ class Recipient(db.Model):
 
 class Package(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    tracking_number = db.Column(db.String(64), unique=True, nullable=False)
+    # Stored without spaces and uppercased, so scanned and typed numbers match
+    tracking_number = db.Column(db.String(100), unique=True, nullable=False)
     carrier = db.Column(db.String(20), nullable=False)
     # Optional until Save decides how form fields map onto Recipient rows
     recipient_id = db.Column(db.Integer, db.ForeignKey("recipient.id"), nullable=True)
