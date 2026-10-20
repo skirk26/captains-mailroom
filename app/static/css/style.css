@@ -127,9 +127,12 @@ body {
   z-index: 2;
   top: 50%;
   left: 50%;
-  width: 250px; /* wider than tall, like shipping barcodes */
-  max-width: calc(100% - 2rem);
-  height: 150px;
+  /* Most of the viewfinder's width: only what's inside is decoded, and long
+     tracking barcodes need lots of camera pixels (a fixed 250px box left
+     laptop webcams just one usable distance). Wider than tall, like the barcodes. */
+  width: min(85%, 560px);
+  max-height: calc(100% - 2rem);
+  aspect-ratio: 5 / 3;
   transform: translate(-50%, -50%);
   display: flex;
   align-items: center;

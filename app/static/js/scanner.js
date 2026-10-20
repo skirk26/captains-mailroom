@@ -119,7 +119,14 @@ function startScanning() {
     .then(() =>
       scanner.start(
         { facingMode: "environment" }, // required, but videoConstraints takes precedence
-        { fps: SCAN_FPS, qrbox: scanBoxFor, videoConstraints: VIDEO_CONSTRAINTS },
+        {
+          fps: SCAN_FPS,
+          qrbox: scanBoxFor,
+          videoConstraints: VIDEO_CONSTRAINTS,
+          // Camera frames arrive unmirrored, so skip the library's second,
+          // mirrored decode of every frame; that roughly doubles decode speed
+          disableFlip: true,
+        },
         onScanSuccess,
       ),
     )
