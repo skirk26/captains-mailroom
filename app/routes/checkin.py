@@ -1,7 +1,7 @@
 # Package check-in routes (scan label, assign recipient, photo location) go here.
 import re
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
@@ -28,6 +28,8 @@ NAME_MAX_LENGTH = 50
 NOTES_MAX_LENGTH = 500
 BOX_MIN, BOX_MAX = 1000, 5199
 DUPLICATE_MESSAGE = "This package has already been checked in."
+SEARCH_MIN_LENGTH = 2
+SEARCH_LIMIT = 8
 
 # Every field the confirm form posts, so a failed save can refill all of them
 FORM_FIELDS = ("tracking", "carrier", "first_name", "last_name", "box_number", "notes", "source")
@@ -199,3 +201,42 @@ def save_checkin():
 
     flash(f"Package {cleaned['tracking']} checked in", "success")
     return redirect(url_for("checkin.checkin"))
+
+
+@checkin_bp.route("/api/recipients/search")
+@login_required
+def search_recipients():
+    """Autofill suggestions for the confirm page: recipients whose first name,
+    last name, or box number starts with ?q= (case-insensitive)."""
+    q = request.args.get("q", "").strip()
+    if len(q) < SEARCH_MIN_LENGTH:
+        return jsonify([])
+
+    # autoescape stops % and _ in the query acting as LIKE wildcards
+    recipients = db.session.scalars(
+        db.select(Recipient)
+        .where(
+            or_(
+                Recipient.last_name.istartswith(q, autoescape=True),
+                Recipient.first_name.istartswith(q, autoescape=True),
+                Recipient.mailbox_number.istartswith(q, autoescape=True),
+            )
+        )
+        .order_by(
+            Recipient.last_name.is_(None),  # people without a last name go last
+            func.lower(Recipient.last_name),
+            func.lower(Recipient.first_name),
+            Recipient.mailbox_number,
+        )
+        .limit(SEARCH_LIMIT)
+    )
+    return jsonify(
+        [
+            {
+                "first_name": recipient.first_name,
+                "last_name": recipient.last_name,
+                "mailbox_number": recipient.mailbox_number,
+            }
+            for recipient in recipients
+        ]
+    )

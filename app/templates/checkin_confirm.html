@@ -41,7 +41,8 @@
         </span>
       {% endif %}
 
-      <form id="checkin-form" method="post" action="{{ url_for('checkin.confirm') }}">
+      <form id="checkin-form" method="post" action="{{ url_for('checkin.confirm') }}"
+            data-search-url="{{ url_for('checkin.search_recipients') }}">
         {% if errors %}
           <div class="alert alert-danger" role="alert">
             {% if errors|length == 1 %}
@@ -77,7 +78,8 @@
           <div class="invalid-feedback">Choose the carrier.</div>
         </div>
 
-        <div class="row g-2 mb-3">
+        {# suggest-anchor: recipient_search.js shows suggestions under these fields #}
+        <div class="row g-2 mb-3 suggest-anchor">
           <div class="col-6">
             <label for="first-name" class="form-label">First name (optional)</label>
             <input type="text" class="form-control form-control-lg" id="first-name" name="first_name"
@@ -92,7 +94,7 @@
           </div>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 suggest-anchor">
           <label for="box-number" class="form-label">Box number (optional)</label>
           {# pattern only checks non-empty values: blank passes, anything else must be 1000-5199.
              The server checks this too; this just catches mistakes before submitting. #}
@@ -115,5 +117,6 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/checkin_confirm.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/recipient_search.js') }}"></script>
 </body>
 </html>

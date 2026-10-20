@@ -204,3 +204,36 @@ body {
 .form-select:user-invalid ~ .invalid-feedback {
   display: block;
 }
+
+/* Recipient autofill suggestions (recipient_search.js). The list is absolutely
+   positioned right after its input, so it floats over the fields below
+   instead of pushing them down. */
+.suggest-anchor {
+  position: relative;
+}
+
+.row.suggest-anchor {
+  --suggest-inset: calc(var(--bs-gutter-x) * 0.5); /* line up with the columns, not the row's gutters */
+}
+
+.suggest-list {
+  position: absolute;
+  z-index: 10;
+  left: var(--suggest-inset, 0);
+  right: var(--suggest-inset, 0);
+  margin-top: 0.25rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  box-shadow: 0 0.5rem 1rem rgba(28, 43, 74, 0.15);
+}
+
+.suggest-list .list-group-item {
+  min-height: 48px; /* comfortable thumb target */
+  display: flex;
+  align-items: center;
+}
+
+.suggest-list .list-group-item.is-highlighted {
+  background-color: var(--cm-cream);
+  box-shadow: inset 4px 0 0 var(--cm-gold);
+}

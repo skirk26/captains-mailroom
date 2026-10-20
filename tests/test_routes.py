@@ -302,3 +302,71 @@ def test_confirm_redirects_without_tracking(client):
     response = client.get("/checkin/confirm?tracking=%20")
     assert response.status_code == 302
     assert response.headers["Location"] == "/checkin"
+
+
+# ---- Recipient autofill search ----
+
+
+def add_recipients(*rows):
+    for first, last, box in rows:
+        db.session.add(Recipient(first_name=first, last_name=last, mailbox_number=box))
+    db.session.commit()
+
+
+def search(client, q):
+    response = client.get("/api/recipients/search", query_string={"q": q})
+    assert response.status_code == 200
+    return response.get_json()
+
+
+def test_search_needs_two_characters(client):
+    add_recipients(("Alex", "Rivera", "1234"))
+    assert search(client, "") == []
+    assert search(client, "r") == []
+    assert search(client, " r ") == []
+
+
+def test_search_returns_name_and_box_fields(client):
+    add_recipients(("Alex", "Rivera", "1234"))
+    assert search(client, "riv") == [{"first_name": "Alex", "last_name": "Rivera", "mailbox_number": "1234"}]
+
+
+@pytest.mark.parametrize("q", ["RIV", "rivera", "al", "ALEX", "12", "1234"])
+def test_search_matches_start_of_last_first_or_box(client, q):
+    add_recipients(("Alex", "Rivera", "1234"), ("Sam", "Lee", "5000"))
+    assert [r["last_name"] for r in search(client, q)] == ["Rivera"]
+
+
+@pytest.mark.parametrize("q", ["ver", "lex", "34", "Rivera Alex"])
+def test_search_does_not_match_the_middle(client, q):
+    add_recipients(("Alex", "Rivera", "1234"))
+    assert search(client, q) == []
+
+
+def test_search_treats_wildcards_literally(client):
+    add_recipients(("Alex", "Rivera", "1234"), ("Pat", "O_Neil", "2000"))
+    assert search(client, "%%") == []
+    assert search(client, "__") == []
+    assert [r["last_name"] for r in search(client, "o_")] == ["O_Neil"]
+
+
+def test_search_returns_at_most_eight(client):
+    add_recipients(*[(f"Person{i}", f"Smith{i}", str(1000 + i)) for i in range(12)])
+    assert len(search(client, "smith")) == 8
+
+
+def test_search_sorts_by_last_name_with_blanks_last(client):
+    add_recipients(("Ann", None, "1100"), ("Ann", "Zane", "1200"), ("Ann", "Adams", "1300"))
+    assert [r["mailbox_number"] for r in search(client, "ann")] == ["1300", "1200", "1100"]
+
+
+def test_search_requires_login(app):
+    response = app.test_client().get("/api/recipients/search?q=riv")
+    assert response.status_code == 302
+    assert response.headers["Location"].startswith("/login")
+
+
+def test_confirm_page_loads_autofill_script(client):
+    html = client.get(f"/checkin/confirm?tracking={UPS_TRACKING}").get_data(as_text=True)
+    assert 'data-search-url="/api/recipients/search"' in html
+    assert "js/recipient_search.js" in html
