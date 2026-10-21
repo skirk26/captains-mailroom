@@ -21,7 +21,8 @@
     </header>
 
     <main id="checkin" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting"
-          data-confirm-url="{{ url_for('checkin.confirm') }}">
+          data-confirm-url="{{ url_for('checkin.confirm') }}"
+          data-tracking-patterns="{{ tracking_patterns|tojson|forceescape }}">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
           <div class="alert alert-{{ category if category != 'message' else 'secondary' }} py-2 mb-3" role="alert">

@@ -2,11 +2,14 @@
 // checkin.html loads from the CDN before this file.
 
 // ---- Supported barcode formats ----
-// CODE_128 is what UPS, FedEx, and USPS tracking barcodes use. The others are
-// only here for testing with whatever barcode is handy; narrow this list later.
-// Fewer formats = faster, more reliable decoding.
+// CODE_128 is what UPS, FedEx, and USPS tracking barcodes use. DATA_MATRIX is
+// for Amazon labels: the TBA number is also in the top-left square code, which
+// survives print damage that often leaves Amazon's long barcode unreadable.
+// The others are only here for testing with whatever barcode is handy; narrow
+// this list later. Fewer formats = faster, more reliable decoding.
 const SUPPORTED_FORMATS = [
   Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.DATA_MATRIX,
   Html5QrcodeSupportedFormats.QR_CODE,
   Html5QrcodeSupportedFormats.CODE_39,
   Html5QrcodeSupportedFormats.EAN_13,
@@ -14,6 +17,11 @@ const SUPPORTED_FORMATS = [
 ];
 
 const SCAN_FPS = 10;
+
+// Shipping labels carry DataMatrix codes holding internal IDs as well as the
+// tracking number (Amazon prints three), so a DataMatrix only counts if it
+// looks like a tracking number. Patterns come from CARRIER_PATTERNS in checkin.py.
+const IGNORE_UNLESS_TRACKING = [Html5QrcodeSupportedFormats.DATA_MATRIX];
 
 // The library decodes from a canvas sized in layout pixels, not camera pixels.
 // Laying the video out this many times larger (then scaling it down to fit)
@@ -28,6 +36,9 @@ const VIDEO_CONSTRAINTS = {
 };
 
 const page = document.getElementById("checkin");
+const trackingPatterns = JSON.parse(page.dataset.trackingPatterns || "[]").map(
+  (pattern) => new RegExp(`^(?:${pattern})$`),
+);
 const viewfinder = document.getElementById("viewfinder");
 const reader = document.getElementById("reader");
 const scanFrame = document.getElementById("scan-frame");
@@ -134,9 +145,19 @@ function startScanning() {
     .catch(showCameraError);
 }
 
-function onScanSuccess(decodedText) {
+function looksLikeTrackingNumber(text) {
+  const compact = text.replace(/\s+/g, "").toUpperCase(); // same as normalize_tracking()
+  return trackingPatterns.some((pattern) => pattern.test(compact));
+}
+
+function onScanSuccess(decodedText, decodedResult) {
   // The library can report the same code again before stop() finishes
   if (handlingResult) return;
+
+  const format = decodedResult?.result?.format?.format;
+  if (IGNORE_UNLESS_TRACKING.includes(format) && !looksLikeTrackingNumber(decodedText)) {
+    return; // e.g. Amazon's sorting codes; keep scanning for the tracking number
+  }
   handlingResult = true;
 
   console.log("Scanned:", decodedText);

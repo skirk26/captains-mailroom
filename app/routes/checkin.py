@@ -139,7 +139,9 @@ def render_confirm(form, errors=()):
 @checkin_bp.route("/checkin")
 @login_required
 def checkin():
-    return render_template("checkin.html")
+    # scanner.js uses these to skip 2D codes that aren't tracking numbers
+    tracking_patterns = [pattern.pattern for _, pattern in CARRIER_PATTERNS]
+    return render_template("checkin.html", tracking_patterns=tracking_patterns)
 
 
 @checkin_bp.route("/checkin/confirm", methods=["GET", "POST"])
