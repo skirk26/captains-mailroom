@@ -81,13 +81,13 @@
         {# suggest-anchor: recipient_search.js shows suggestions under these fields #}
         <div class="row g-2 mb-3 suggest-anchor">
           <div class="col-6">
-            <label for="first-name" class="form-label">First name (optional)</label>
+            <label for="first-name" class="form-label">First name</label>
             <input type="text" class="form-control form-control-lg" id="first-name" name="first_name"
                    value="{{ form.first_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
                    spellcheck="false">
           </div>
           <div class="col-6">
-            <label for="last-name" class="form-label">Last name (optional)</label>
+            <label for="last-name" class="form-label">Last name</label>
             <input type="text" class="form-control form-control-lg" id="last-name" name="last_name"
                    value="{{ form.last_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
                    spellcheck="false">
@@ -95,7 +95,7 @@
         </div>
 
         <div class="mb-3 suggest-anchor">
-          <label for="box-number" class="form-label">Box number (optional)</label>
+          <label for="box-number" class="form-label">Box number</label>
           {# pattern only checks non-empty values: blank passes, anything else must be 1000-5199.
              The server checks this too; this just catches mistakes before submitting. #}
           <input type="text" class="form-control form-control-lg" id="box-number" name="box_number"
