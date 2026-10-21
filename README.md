@@ -32,7 +32,18 @@ You'll be prompted for the password (typed twice, hidden).
 python run.py
 ```
 
-Then open http://localhost:5000. To test from a phone on the same Wi-Fi, use
-`http://<your-computer's-IP>:5000`.
+Then open http://localhost:5000.
+
+To test from a phone on the same Wi-Fi, use HTTPS (phones only allow the camera
+on secure pages). Install `cryptography` once, then start the server with a
+temporary certificate:
+
+```bash
+venv\Scripts\python.exe -m pip install cryptography
+venv\Scripts\python.exe -m flask --app run run --host 0.0.0.0 --port 5000 --cert adhoc --debug
+```
+
+Open the `https://<your-computer's-IP>:5000/checkin` address it prints on your
+phone, and accept the certificate warning (Advanced → Proceed).
 
 The SQLite database is created in `instance/` (not tracked by git).
