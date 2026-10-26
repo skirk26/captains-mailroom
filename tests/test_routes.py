@@ -370,3 +370,98 @@ def test_confirm_page_loads_autofill_script(client):
     html = client.get(f"/checkin/confirm?tracking={UPS_TRACKING}").get_data(as_text=True)
     assert 'data-search-url="/api/recipients/search"' in html
     assert "js/recipient_search.js" in html
+
+
+# ---- Check-out scan and lookup ----
+
+
+def checkout_lookup(client, tracking, **params):
+    return client.get("/checkout/confirm", query_string={"tracking": tracking, **params})
+
+
+def test_scan_pages_point_the_scanner_at_their_own_confirm_page(client):
+    checkin_html = client.get("/checkin").get_data(as_text=True)
+    checkout_html = client.get("/checkout").get_data(as_text=True)
+    assert '<div id="reader" data-confirm-url="/checkin/confirm"' in checkin_html
+    assert '<div id="reader" data-confirm-url="/checkout/confirm"' in checkout_html
+    assert 'action="/checkout/confirm"' in checkout_html  # manual entry form
+    assert "data-tracking-patterns=" in checkout_html
+
+
+def test_dashboard_links_to_check_in_and_check_out(client):
+    html = client.get("/dashboard").get_data(as_text=True)
+    assert 'href="/checkin"' in html
+    assert 'href="/checkout"' in html
+
+
+def test_checkout_lookup_redirects_without_tracking(client):
+    response = checkout_lookup(client, "  ")
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/checkout"
+    html = client.get("/checkout").get_data(as_text=True)
+    assert "Scan a barcode or enter a tracking number to continue." in html
+
+
+def test_checkout_lookup_shows_checked_in_package(client):
+    post_checkin(client, first_name="Ada", last_name="Lovelace", box_number="1815", notes="Fragile")
+    html = checkout_lookup(client, UPS_TRACKING).get_data(as_text=True)
+
+    assert "Checked in" in html
+    assert UPS_TRACKING in html
+    assert "UPS" in html
+    assert "Ada Lovelace" in html
+    assert "1815" in html
+    assert "Fragile" in html
+    assert "data-local-time" in html
+    assert "Mark as Picked Up</button>" in html
+    assert "disabled>Mark as Picked Up" in html
+    assert 'name="student_id"' in html
+    assert "No package found" not in html
+
+
+def test_checkout_lookup_hides_missing_recipient_fields(client):
+    post_checkin(client, notes="Left at front desk")
+    html = checkout_lookup(client, UPS_TRACKING).get_data(as_text=True)
+
+    assert "<dt>Recipient</dt>" not in html
+    assert "<dt>Box number</dt>" not in html
+    assert "Left at front desk" in html
+
+
+def test_checkout_lookup_normalizes_like_check_in(client):
+    post_checkin(client, box_number="1815")
+    html = checkout_lookup(client, "1z999 aa10 1234 5678 4").get_data(as_text=True)
+    assert "Checked in" in html
+
+
+def test_checkout_lookup_shows_picked_up_package(client):
+    post_checkin(client, box_number="1815")
+    package = all_packages()[0]
+    package.status = "picked_up"  # the pickup step isn't built yet, so set it directly
+    package.checked_out_at = package.checked_in_at
+    db.session.commit()
+
+    html = checkout_lookup(client, UPS_TRACKING).get_data(as_text=True)
+    assert "Picked up" in html
+    assert "No further action needed." in html
+    assert "Mark as Picked Up" not in html
+    assert 'name="student_id"' not in html
+
+
+def test_checkout_lookup_offers_check_in_when_not_found(client):
+    response = checkout_lookup(client, "tba123456789012", source="manual")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "No package found with this tracking number." in html
+    assert "TBA123456789012" in html
+    assert 'href="/checkin/confirm?tracking=TBA123456789012&amp;source=manual"' in html
+    assert "Check it in now" in html
+
+
+def test_checkout_pages_require_login(app):
+    client = app.test_client()
+    for url in ("/checkout", f"/checkout/confirm?tracking={UPS_TRACKING}"):
+        response = client.get(url)
+        assert response.status_code == 302
+        assert response.headers["Location"].startswith("/login")

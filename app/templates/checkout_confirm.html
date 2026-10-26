@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C2B4A">
+  <title>Confirm Pickup · Captain's Mail</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {# Times are stored in UTC. local_time.js rewrites them in the phone's own time zone;
+     the UTC text is what shows if the script doesn't run. #}
+  {% macro local_time(when) -%}
+    <time datetime="{{ when.strftime('%Y-%m-%dT%H:%M:%SZ') }}" data-local-time>{{ when.strftime('%b %d, %Y, %H:%M') }} UTC</time>
+  {%- endmacro %}
+
+  <div class="page-shell d-flex flex-column">
+    <header class="app-header d-flex align-items-center px-2">
+      <a href="{{ url_for('checkout.checkout') }}" class="header-back" aria-label="Back to scanner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </a>
+      <h1 class="h5 fw-semibold mb-0 ms-1">Confirm Pickup</h1>
+    </header>
+
+    <main class="flex-grow-1 px-3 pt-4 pb-4">
+      {% if state == "not_found" %}
+        <div class="alert alert-danger" role="alert">
+          <p class="fw-semibold mb-1">No package found with this tracking number.</p>
+          <p class="tracking-input mb-0 text-break">{{ tracking }}</p>
+        </div>
+        <p class="mb-0">
+          <a href="{{ url_for('checkin.confirm', tracking=tracking, source=source or None) }}" class="link-gold">Check it in now</a>
+        </p>
+
+      {% else %}
+        <div class="card package-card shadow-sm mb-4">
+          <div class="card-body">
+            {% if state == "picked_up" %}
+              <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-3 py-2 mb-3">
+                Picked up{% if package.checked_out_at %} {{ local_time(package.checked_out_at) }}{% endif %}
+              </span>
+            {% else %}
+              <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2 mb-3">
+                Checked in
+              </span>
+            {% endif %}
+
+            <p class="small text-muted mb-1">Tracking number</p>
+            <p class="tracking-input fw-semibold text-break mb-3">{{ package.tracking_number }}</p>
+
+            <dl class="package-details mb-0">
+              <dt>Carrier</dt>
+              <dd>{{ package.carrier }}</dd>
+
+              {% if package.recipient and package.recipient.full_name %}
+                <dt>Recipient</dt>
+                <dd>{{ package.recipient.full_name }}</dd>
+              {% endif %}
+
+              {% if package.recipient and package.recipient.mailbox_number %}
+                <dt>Box number</dt>
+                <dd>{{ package.recipient.mailbox_number }}</dd>
+              {% endif %}
+
+              {% if package.notes %}
+                <dt>Notes</dt>
+                <dd class="package-notes">{{ package.notes }}</dd>
+              {% endif %}
+
+              <dt>Checked in</dt>
+              <dd>{{ local_time(package.checked_in_at) }}</dd>
+            </dl>
+          </div>
+        </div>
+
+        {% if state == "picked_up" %}
+          <p class="text-center text-muted mb-0">No further action needed.</p>
+        {% else %}
+          {# Not saved yet: the pickup step will post this form #}
+          <form method="post" novalidate>
+            <div class="mb-4">
+              <label for="student-id" class="form-label fw-semibold">Student ID <span class="text-muted fw-normal">(optional)</span></label>
+              <input type="text" class="form-control form-control-lg" id="student-id" name="student_id"
+                     inputmode="numeric" autocomplete="off" maxlength="20"
+                     placeholder="ID of the person picking it up">
+            </div>
+            {# Disabled until the pickup step is built; also blocks Enter from submitting #}
+            <button type="submit" class="btn btn-navy btn-lg w-100" disabled>Mark as Picked Up</button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </main>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
+</body>
+</html>

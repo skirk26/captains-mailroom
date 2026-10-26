@@ -41,11 +41,13 @@ def create_app(test_config=None):
 
     from app.routes.auth import bp as auth_bp
     from app.routes.checkin import checkin_bp
+    from app.routes.checkout import checkout_bp
     from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(checkin_bp)
+    app.register_blueprint(checkout_bp)
 
     from app.cli import create_staff
 

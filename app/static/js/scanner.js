@@ -1,5 +1,9 @@
-// Barcode scanning for the check-in page. Relies on html5-qrcode, which
-// checkin.html loads from the CDN before this file.
+// Barcode scanning for the check-in and check-out pages. Relies on
+// html5-qrcode, which the page loads from the CDN before this file.
+//
+// Each page sets these on its #reader element:
+//   data-confirm-url        where to go with ?tracking=<decoded value>
+//   data-tracking-patterns  JSON list of tracking-number regexes (CARRIER_PATTERNS)
 
 // ---- Supported barcode formats ----
 // CODE_128 is what UPS, FedEx, and USPS tracking barcodes use. DATA_MATRIX is
@@ -35,12 +39,12 @@ const VIDEO_CONSTRAINTS = {
   height: { ideal: 1080 },
 };
 
-const page = document.getElementById("checkin");
-const trackingPatterns = JSON.parse(page.dataset.trackingPatterns || "[]").map(
+const reader = document.getElementById("reader");
+const page = reader.closest("[data-state]"); // the element style.css reads the scan state from
+const trackingPatterns = JSON.parse(reader.dataset.trackingPatterns || "[]").map(
   (pattern) => new RegExp(`^(?:${pattern})$`),
 );
 const viewfinder = document.getElementById("viewfinder");
-const reader = document.getElementById("reader");
 const scanFrame = document.getElementById("scan-frame");
 const messageTitle = document.getElementById("scan-message-title");
 const messageBody = document.getElementById("scan-message-body");
@@ -161,7 +165,7 @@ function onScanSuccess(decodedText, decodedResult) {
   handlingResult = true;
 
   console.log("Scanned:", decodedText);
-  const confirmUrl = new URL(page.dataset.confirmUrl, window.location.href);
+  const confirmUrl = new URL(reader.dataset.confirmUrl, window.location.href);
   confirmUrl.searchParams.set("tracking", decodedText); // URL-encodes the value
   stopScanning().then(() => window.location.assign(confirmUrl));
 }
