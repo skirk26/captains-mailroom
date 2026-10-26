@@ -61,6 +61,8 @@ class Package(db.Model):
     location_photo_path = db.Column(db.String(255), nullable=True)
     checked_in_at = db.Column(db.DateTime, nullable=False, default=utc_now)
     checked_out_at = db.Column(db.DateTime, nullable=True)
+    # Student ID of whoever collected it, if staff typed one in
+    checked_out_to = db.Column(db.String(20), nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
     recipient = db.relationship("Recipient", back_populates="packages")

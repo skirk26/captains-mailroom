@@ -37,6 +37,10 @@
         </p>
 
       {% else %}
+        {% for error in errors %}
+          <div class="alert alert-danger py-2 mb-3" role="alert">{{ error }}</div>
+        {% endfor %}
+
         <div class="card package-card shadow-sm mb-4">
           <div class="card-body">
             {% if state == "picked_up" %}
@@ -73,6 +77,18 @@
 
               <dt>Checked in</dt>
               <dd>{{ local_time(package.checked_in_at) }}</dd>
+
+              {% if state == "picked_up" %}
+                {% if package.checked_out_to %}
+                  <dt>Student ID</dt>
+                  <dd>{{ package.checked_out_to }}</dd>
+                {% endif %}
+
+                {% if package.checked_out_staff %}
+                  <dt>Checked out by</dt>
+                  <dd>{{ package.checked_out_staff.username }}</dd>
+                {% endif %}
+              {% endif %}
             </dl>
           </div>
         </div>
@@ -80,16 +96,15 @@
         {% if state == "picked_up" %}
           <p class="text-center text-muted mb-0">No further action needed.</p>
         {% else %}
-          {# Not saved yet: the pickup step will post this form #}
-          <form method="post" novalidate>
+          <form id="pickup-form" method="post" action="{{ url_for('checkout.confirm') }}" novalidate>
+            <input type="hidden" name="tracking" value="{{ package.tracking_number }}">
             <div class="mb-4">
               <label for="student-id" class="form-label fw-semibold">Student ID <span class="text-muted fw-normal">(optional)</span></label>
               <input type="text" class="form-control form-control-lg" id="student-id" name="student_id"
                      inputmode="numeric" autocomplete="off" maxlength="20"
-                     placeholder="ID of the person picking it up">
+                     value="{{ student_id }}" placeholder="ID of the person picking it up">
             </div>
-            {# Disabled until the pickup step is built; also blocks Enter from submitting #}
-            <button type="submit" class="btn btn-navy btn-lg w-100" disabled>Mark as Picked Up</button>
+            <button type="submit" id="pickup-button" class="btn btn-navy btn-lg w-100">Mark as Picked Up</button>
           </form>
         {% endif %}
       {% endif %}
@@ -97,5 +112,8 @@
   </div>
 
   <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
+  {% if state == "checked_in" %}
+    <script src="{{ url_for('static', filename='js/checkout_confirm.js') }}"></script>
+  {% endif %}
 </body>
 </html>

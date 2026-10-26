@@ -2,7 +2,7 @@ import pytest
 
 from app import create_app, db
 from app.models import Package, Recipient, Staff
-from app.routes import checkin
+from app.routes import checkin, checkout
 from app.routes.checkin import guess_carrier, validate_checkin_form
 
 PASSWORD = "test-only-password"
@@ -414,7 +414,9 @@ def test_checkout_lookup_shows_checked_in_package(client):
     assert "Fragile" in html
     assert "data-local-time" in html
     assert "Mark as Picked Up</button>" in html
-    assert "disabled>Mark as Picked Up" in html
+    assert "disabled>Mark as Picked Up" not in html
+    assert 'action="/checkout/confirm"' in html
+    assert f'name="tracking" value="{UPS_TRACKING}"' in html
     assert 'name="student_id"' in html
     assert "No package found" not in html
 
@@ -437,7 +439,7 @@ def test_checkout_lookup_normalizes_like_check_in(client):
 def test_checkout_lookup_shows_picked_up_package(client):
     post_checkin(client, box_number="1815")
     package = all_packages()[0]
-    package.status = "picked_up"  # the pickup step isn't built yet, so set it directly
+    package.status = "checked_out"
     package.checked_out_at = package.checked_in_at
     db.session.commit()
 
@@ -465,3 +467,116 @@ def test_checkout_pages_require_login(app):
         response = client.get(url)
         assert response.status_code == 302
         assert response.headers["Location"].startswith("/login")
+
+
+# ---- Marking as picked up ----
+
+
+def post_pickup(client, tracking=UPS_TRACKING, **fields):
+    return client.post("/checkout/confirm", data={"tracking": tracking, **fields})
+
+
+def test_pickup_checks_the_package_out(client):
+    post_checkin(client, box_number="1815")
+    response = post_pickup(client, student_id=" 00912345 ")
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/checkout"
+    package = all_packages()[0]
+    staff = db.session.scalar(db.select(Staff).filter_by(username="tester"))
+    assert package.status == "checked_out"
+    assert package.checked_out_by == staff.id
+    assert package.checked_out_at is not None
+    assert package.checked_out_at >= package.checked_in_at
+    assert package.checked_out_to == "00912345"
+
+
+def test_pickup_success_message_shows_on_scanner_page(client):
+    post_checkin(client, box_number="1815")
+    post_pickup(client)
+    html = client.get("/checkout").get_data(as_text=True)
+    assert f"Package {UPS_TRACKING} marked as picked up" in html
+    assert "alert-success" in html
+
+
+def test_pickup_without_student_id_saves_none(client):
+    post_checkin(client, box_number="1815")
+    post_pickup(client, student_id="   ")
+    package = all_packages()[0]
+    assert package.status == "checked_out"
+    assert package.checked_out_to is None
+
+
+def test_pickup_normalizes_tracking(client):
+    post_checkin(client, box_number="1815")
+    post_pickup(client, tracking="1z999 aa10 1234 5678 4")
+    assert all_packages()[0].status == "checked_out"
+
+
+def test_pickup_rejects_overlong_student_id(client):
+    post_checkin(client, box_number="1815")
+    response = post_pickup(client, student_id="1" * 21)
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Student ID can be at most 20 characters." in html
+    assert all_packages()[0].status == "checked_in"
+
+
+def test_pickup_of_unknown_package_redirects(client):
+    response = post_pickup(client, tracking="TBA123456789012")
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/checkout"
+    html = client.get("/checkout").get_data(as_text=True)
+    assert "No package found with this tracking number" in html
+
+
+def test_pickup_twice_keeps_the_first_checkout(client):
+    post_checkin(client, box_number="1815")
+    post_pickup(client, student_id="111")
+    first = all_packages()[0]
+    first_time, first_staff = first.checked_out_at, first.checked_out_by
+
+    response = post_pickup(client, student_id="222")
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert "Picked up" in html
+    assert "No further action needed." in html
+    assert "Checked out by" in html
+    assert "tester" in html
+    assert "111" in html
+
+    package = all_packages()[0]
+    assert package.checked_out_at == first_time
+    assert package.checked_out_by == first_staff
+    assert package.checked_out_to == "111"
+
+
+def test_pickup_that_loses_a_race_shows_picked_up(client, monkeypatch):
+    post_checkin(client, box_number="1815")
+    real_find = checkout.find_package
+
+    def find_then_lose_race(tracking):
+        # The page loaded while it was checked in, but another request checks it
+        # out before this one's update runs
+        package = real_find(tracking)
+        db.session.execute(
+            db.update(Package)
+            .where(Package.id == package.id)
+            .values(status="checked_out", checked_out_to="111")
+            .execution_options(synchronize_session=False)
+        )
+        return package
+
+    monkeypatch.setattr(checkout, "find_package", find_then_lose_race)
+    response = post_pickup(client, student_id="222")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "No further action needed." in html
+    assert all_packages()[0].checked_out_to == "111"
+
+
+def test_pickup_requires_login(app):
+    response = app.test_client().post("/checkout/confirm", data={"tracking": UPS_TRACKING})
+    assert response.status_code == 302
+    assert response.headers["Location"].startswith("/login")
