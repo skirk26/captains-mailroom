@@ -54,10 +54,10 @@ def all_recipients():
 def test_valid_save(client):
     response = post_checkin(client, first_name=" Ada ", last_name="Lovelace", box_number="1815")
 
-    assert response.status_code == 302
-    assert response.headers["Location"] == "/checkin"
-
     [package] = all_packages()
+    assert response.status_code == 302
+    assert response.headers["Location"] == f"/checkin/photo/{package.id}"
+
     assert package.tracking_number == UPS_TRACKING
     assert package.carrier == "UPS"
     assert package.status == "checked_in"
@@ -68,14 +68,14 @@ def test_valid_save(client):
     assert package.recipient.mailbox_number == "1815"
 
 
-def test_success_message_shows_on_scanner_page(client):
+def test_success_message_shows_on_photo_page(client):
     response = client.post(
         "/checkin/confirm",
         data={"tracking": UPS_TRACKING, "carrier": "UPS", "box_number": "1815"},
         follow_redirects=True,
     )
     html = response.get_data(as_text=True)
-    assert response.request.path == "/checkin"
+    assert response.request.path == f"/checkin/photo/{all_packages()[0].id}"
     assert "alert-success" in html
     assert f"Package {UPS_TRACKING} checked in" in html
 
@@ -585,3 +585,100 @@ def test_pickup_requires_login(app):
     response = app.test_client().post("/checkout/confirm", data={"tracking": UPS_TRACKING})
     assert response.status_code == 302
     assert response.headers["Location"].startswith("/login")
+
+
+# ---- Storage-location photo screen ----
+
+
+def photo_page(client, package):
+    return client.get(f"/checkin/photo/{package.id}")
+
+
+def test_photo_page_shows_the_package(client):
+    post_checkin(client, first_name="Ada", last_name="Lovelace", box_number="1815")
+    [package] = all_packages()
+    html = photo_page(client, package).get_data(as_text=True)
+
+    assert "…23456784" in html  # last 8 characters of 1Z999AA10123456784
+    assert UPS_TRACKING[:-8] + "<" not in html
+    assert "<span class=\"inset-value\">UPS</span>" in html
+    assert "Ada Lovelace" in html
+    assert "1815" in html
+    assert "Photograph where it&#39;s stored. Frame the shelf or bin so staff can find it." in html         or "Photograph where it's stored. Frame the shelf or bin so staff can find it." in html
+    assert "Keep labels and names out of the photo." in html
+
+
+def test_photo_page_hides_missing_recipient_rows(client):
+    post_checkin(client, notes="Left at desk")
+    html = photo_page(client, all_packages()[0]).get_data(as_text=True)
+    assert ">Recipient<" not in html
+    assert ">Box number<" not in html
+
+
+def test_photo_page_opens_the_rear_camera(client):
+    post_checkin(client, box_number="1815")
+    html = photo_page(client, all_packages()[0]).get_data(as_text=True)
+    assert 'type="file" id="photo-input"' in html
+    assert 'accept="image/*" capture="environment"' in html
+    assert "<span>Take Photo</span>" in html
+    assert 'aria-controls="photo-input"' in html
+    assert 'id="photo-use" class="btn btn-primary btn-lg" disabled>Use Photo' in html
+    assert "<span>Retake</span>" in html
+    assert "js/checkin_photo.js" in html
+    assert 'data-state="empty"' in html
+
+
+def test_photo_page_skip_link(client):
+    post_checkin(client, box_number="1815")
+    package = all_packages()[0]
+    html = photo_page(client, package).get_data(as_text=True)
+    assert f'href="/checkin/photo/{package.id}/skip"' in html
+
+    response = client.get(f"/checkin/photo/{package.id}/skip")
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/checkin"
+    assert "Checked in without a photo." in client.get("/checkin").get_data(as_text=True)
+
+
+def test_photo_page_shows_existing_photo(client):
+    post_checkin(client, box_number="1815")
+    package = all_packages()[0]
+    package.location_photo_path = "shelf-a.jpg"  # no upload step yet, so set it directly
+    db.session.commit()
+
+    html = photo_page(client, package).get_data(as_text=True)
+    assert 'data-state="existing"' in html
+    assert 'src="/static/uploads/shelf-a.jpg"' in html
+
+
+def test_photo_page_unknown_package_is_404(client):
+    assert client.get("/checkin/photo/999").status_code == 404
+
+
+def test_photo_page_redirects_when_already_picked_up(client):
+    post_checkin(client, box_number="1815")
+    package = all_packages()[0]
+    package.status = "checked_out"
+    db.session.commit()
+
+    response = photo_page(client, package)
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/checkin"
+
+
+def test_photo_pages_require_login(app):
+    client = app.test_client()
+    for url in ("/checkin/photo/1", "/checkin/photo/1/skip"):
+        response = client.get(url)
+        assert response.status_code == 302
+        assert response.headers["Location"].startswith("/login")
+
+
+def test_photo_page_writes_nothing(client):
+    post_checkin(client, box_number="1815")
+    package = all_packages()[0]
+    before = (package.status, package.location_photo_path)
+    photo_page(client, package)
+    client.get(f"/checkin/photo/{package.id}/skip")
+    db.session.refresh(package)
+    assert (package.status, package.location_photo_path) == before

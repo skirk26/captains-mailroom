@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_macros.html" import alert %}
+
+{% block title %}Storage Photo{% endblock %}
+{% block nav_title %}Storage Photo{% endblock %}
+
+{% block content %}
+  {# Which package this is: enough to match it to the label in hand #}
+  <div class="inset-section">
+    <p class="inset-header">Package</p>
+    <div class="inset-list">
+      <div class="inset-row">
+        <span class="inset-label">Tracking</span>
+        <span class="inset-value mono" title="{{ package.tracking_number }}">…{{ package.tracking_number[-8:] }}</span>
+      </div>
+      <div class="inset-row">
+        <span class="inset-label">Carrier</span>
+        <span class="inset-value">{{ package.carrier }}</span>
+      </div>
+      {% if package.recipient and package.recipient.full_name %}
+        <div class="inset-row">
+          <span class="inset-label">Recipient</span>
+          <span class="inset-value">{{ package.recipient.full_name }}</span>
+        </div>
+      {% endif %}
+      {% if package.recipient and package.recipient.mailbox_number %}
+        <div class="inset-row">
+          <span class="inset-label">Box number</span>
+          <span class="inset-value">{{ package.recipient.mailbox_number }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# checkin_photo.js switches data-state: empty, existing, processing, preview #}
+  <section id="photo-capture" class="photo-capture" data-state="{{ 'existing' if photo_url else 'empty' }}"
+           aria-labelledby="photo-instruction">
+    <p id="photo-instruction" class="mb-3">
+      Photograph where it's stored. Frame the shelf or bin so staff can find it.
+      Keep labels and names out of the photo.
+    </p>
+
+    <div id="photo-error" hidden>
+      {% call alert("warning", "mb-3") %}
+        <span id="photo-error-text">We couldn't read that photo. Try taking it again.</span>
+      {% endcall %}
+    </div>
+
+    <figure class="photo-frame mb-3">
+      <div class="photo-placeholder" aria-hidden="true">
+        {{ icon("image") }}
+        <span class="footnote">No photo yet</span>
+      </div>
+      <p class="photo-processing footnote mb-0" role="status">Preparing photo…</p>
+      <img id="photo-preview" class="photo-preview" alt="Preview of the storage location photo"
+           {% if photo_url %}src="{{ photo_url }}"{% endif %}>
+    </figure>
+
+    {# The camera opens through this hidden input; the buttons below trigger it.
+       capture="environment" asks phones for the rear camera. #}
+    <input type="file" id="photo-input" class="visually-hidden" accept="image/*" capture="environment"
+           tabindex="-1" aria-hidden="true">
+
+    <div class="photo-actions-empty">
+      <button type="button" class="btn btn-primary btn-lg w-100 photo-take" aria-controls="photo-input">
+        {{ icon("camera-fill") }}<span>Take Photo</span>
+      </button>
+    </div>
+
+    <div class="photo-actions-review">
+      {# Saving the photo comes with the upload step; held in memory until then #}
+      <button type="button" id="photo-use" class="btn btn-primary btn-lg" disabled>Use Photo</button>
+      <button type="button" class="btn btn-secondary btn-lg photo-take" aria-controls="photo-input">
+        {{ icon("arrow-counterclockwise") }}<span>Retake</span>
+      </button>
+    </div>
+  </section>
+
+  <p class="text-center mt-3 mb-0">
+    <a href="{{ url_for('checkin.skip_photo', package_id=package.id) }}" class="app-link">Skip for now</a>
+  </p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/checkin_photo.js') }}"></script>
+{% endblock %}

@@ -1,4 +1,4 @@
-# Package check-in routes (scan label, assign recipient, photo location) go here.
+# Package check-in routes: scan label, assign recipient, photograph storage location.
 import re
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
@@ -183,16 +183,15 @@ def save_checkin():
             cleaned["first_name"], cleaned["last_name"], cleaned["box_number"]
         )
 
-    db.session.add(
-        Package(
-            tracking_number=cleaned["tracking"],
-            carrier=cleaned["carrier"],
-            recipient=recipient,
-            notes=cleaned["notes"],
-            status="checked_in",
-            checked_in_by=current_user.id,
-        )
+    package = Package(
+        tracking_number=cleaned["tracking"],
+        carrier=cleaned["carrier"],
+        recipient=recipient,
+        notes=cleaned["notes"],
+        status="checked_in",
+        checked_in_by=current_user.id,
     )
+    db.session.add(package)
     try:
         db.session.commit()
     except IntegrityError:
@@ -202,6 +201,41 @@ def save_checkin():
         return render_confirm(submitted, [DUPLICATE_MESSAGE])
 
     flash(f"Package {cleaned['tracking']} checked in", "success")
+    # Next: photograph where it's stored (or skip)
+    return redirect(url_for("checkin.photo", package_id=package.id))
+
+
+def location_photo_url(package):
+    # location_photo_path is a file name inside UPLOAD_FOLDER (static/uploads/);
+    # the upload step that writes it can change this one place if that changes
+    if not package.location_photo_path:
+        return None
+    return url_for("static", filename=f"uploads/{package.location_photo_path}")
+
+
+@checkin_bp.route("/checkin/photo/<int:package_id>")
+@login_required
+def photo(package_id):
+    # Imported here: checkout.py imports from this module
+    from app.routes.checkout import CHECKED_OUT_STATUS
+
+    package = db.get_or_404(Package, package_id)
+    if package.status == CHECKED_OUT_STATUS:
+        flash("This package has already been picked up.", "warning")
+        return redirect(url_for("checkin.checkin"))
+
+    return render_template(
+        "checkin_photo.html",
+        package=package,
+        photo_url=location_photo_url(package),
+    )
+
+
+# A link rather than a form: it only shows a message, nothing is saved
+@checkin_bp.route("/checkin/photo/<int:package_id>/skip")
+@login_required
+def skip_photo(package_id):
+    flash("Checked in without a photo.", "info")
     return redirect(url_for("checkin.checkin"))
 
 

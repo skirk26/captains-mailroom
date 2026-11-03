@@ -6,13 +6,15 @@
 #                              html5-qrcode sets on its video element
 #   img-src data:              Bootstrap's built-in icons (select arrows,
 #                              validation marks) are data: SVGs in its CSS
+#   img-src blob:              the storage-photo preview (checkin_photo.js shows
+#                              the shrunken photo from memory via createObjectURL)
 # The camera stream is attached with video.srcObject, which CSP doesn't cover,
 # so it needs no media-src exception.
 CONTENT_SECURITY_POLICY = "; ".join([
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    "img-src 'self' data: blob:",
     "connect-src 'self'",  # recipient_search.js calls /api/recipients/search
     "object-src 'none'",
     "base-uri 'self'",

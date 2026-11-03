@@ -324,7 +324,7 @@ def test_csp_allows_only_this_sites_scripts(app):
     assert directives["default-src"] == ["'self'"]
     assert directives["script-src"] == ["'self'"]  # no inline scripts, no eval
     assert directives["style-src"] == ["'self'", "'unsafe-inline'"]
-    assert directives["img-src"] == ["'self'", "data:"]
+    assert directives["img-src"] == ["'self'", "data:", "blob:"]
     assert directives["object-src"] == ["'none'"]
     assert directives["frame-ancestors"] == ["'none'"]
     assert directives["form-action"] == ["'self'"]

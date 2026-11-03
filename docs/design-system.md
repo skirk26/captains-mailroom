@@ -200,5 +200,6 @@ Apple's SF Symbols aren't used.
 | Page | Layout |
 |---|---|
 | Sign in, dashboard, error pages | Extend `base.html` and use the components above |
+| Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |
 | Scan pages (check in, check out) | Their own layout for now, with the new colors, icons, and nav bar look |
 | Confirm pages (check in, pickup) | Their own layout for now, with the new colors, icons, chips, and alerts |

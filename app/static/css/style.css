@@ -221,3 +221,87 @@
 .package-notes {
   white-space: pre-line; /* keep the line breaks staff typed */
 }
+
+/* Storage-photo screen. checkin_photo.js sets data-state on #photo-capture:
+   empty (no photo yet), existing (saved photo), processing, preview (new photo). */
+.photo-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+/* Fixed shape while there's no photo; a photo then sets its own shape */
+[data-state="empty"] .photo-frame,
+[data-state="processing"] .photo-frame {
+  aspect-ratio: 4 / 3;
+}
+
+[data-state="empty"] .photo-frame {
+  border: 1.5px dashed var(--color-silver);
+}
+
+.photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.photo-placeholder .icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--color-silver);
+}
+
+/* The whole photo, never cropped: what staff see is exactly what gets saved.
+   Upright phone photos are tall, so cap the height to keep the buttons in reach. */
+.photo-preview {
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+  max-height: 60dvh;
+  object-fit: contain;
+  background-color: var(--color-viewfinder);
+}
+
+.photo-processing {
+  color: var(--color-text-secondary);
+}
+
+.photo-placeholder,
+.photo-preview,
+.photo-processing,
+.photo-actions-empty,
+.photo-actions-review {
+  display: none;
+}
+
+[data-state="empty"] .photo-placeholder,
+[data-state="processing"] .photo-processing {
+  display: flex;
+}
+
+[data-state="existing"] .photo-preview,
+[data-state="preview"] .photo-preview {
+  display: block;
+}
+
+[data-state="empty"] .photo-actions-empty {
+  display: block;
+}
+
+[data-state="existing"] .photo-actions-review,
+[data-state="preview"] .photo-actions-review {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* A saved photo only offers Retake; Use Photo is for a new one */
+[data-state="existing"] #photo-use {
+  display: none;
+}
