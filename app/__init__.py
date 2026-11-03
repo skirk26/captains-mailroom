@@ -86,6 +86,10 @@ def create_app(test_config=None):
     register_error_pages(app)
     register_security_headers(app)
 
+    from app.icons import icon
+
+    app.jinja_env.globals["icon"] = icon
+
     # Importing models registers the tables; create_all only adds missing ones
     from app import models  # noqa: F401
 

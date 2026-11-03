@@ -1,30 +1,35 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1C2B4A">
-  <title>Dashboard · Captain's Mail</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  <header class="app-header d-flex align-items-center justify-content-between px-3">
-    <h1 class="h5 fw-semibold mb-0">Captain's Mail</h1>
-    {# POST, not a link, so another site can't sign staff out #}
-    <form method="post" action="{{ url_for('auth.logout') }}" class="mb-0">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-link link-gold p-0 border-0 align-baseline">Sign out</button>
-    </form>
-  </header>
+{% extends "base.html" %}
 
-  <!-- Placeholder dashboard: real content comes later -->
-  <main class="container px-3 py-4" style="max-width: 480px;">
-    <p class="text-muted mb-4">Signed in as {{ current_user.username }}</p>
-    <div class="d-grid gap-3">
-      <a href="{{ url_for('checkin.checkin') }}" class="btn btn-navy btn-lg">Check In Package</a>
-      <a href="{{ url_for('checkout.checkout') }}" class="btn btn-navy btn-lg">Check Out Package</a>
-    </div>
-  </main>
-</body>
-</html>
+{% block title %}Dashboard{% endblock %}
+
+{% block nav_title %}Captain's Mail{% endblock %}
+{% block nav_trailing %}
+  {# POST, not a link, so another site can't sign staff out #}
+  <form method="post" action="{{ url_for('auth.logout') }}" class="mb-0">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="nav-bar-button">Sign out</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+  <div class="page-heading">
+    <h2 class="large-title mb-1">Packages</h2>
+    <p class="subheadline text-secondary-label mb-0">Signed in as {{ current_user.username }}</p>
+  </div>
+
+  <div class="inset-section">
+    <nav class="inset-list" aria-label="Package actions">
+      <a href="{{ url_for('checkin.checkin') }}" class="inset-row">
+        <span class="inset-row-icon">{{ icon("box-arrow-in-down") }}</span>
+        <span class="inset-row-title">Check In Package</span>
+        {{ icon("chevron-right", "inset-row-chevron") }}
+      </a>
+      <a href="{{ url_for('checkout.checkout') }}" class="inset-row">
+        <span class="inset-row-icon">{{ icon("box-arrow-up") }}</span>
+        <span class="inset-row-title">Check Out Package</span>
+        {{ icon("chevron-right", "inset-row-chevron") }}
+      </a>
+    </nav>
+    <p class="inset-footer">Scan a shipping label to check a package in or hand it to a student.</p>
+  </div>
+{% endblock %}

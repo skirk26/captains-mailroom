@@ -1,49 +1,41 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1C2B4A">
-  <title>Sign In · Captain's Mail</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  <main class="login-wrapper d-flex align-items-center justify-content-center px-3 py-4">
-    <div class="card login-card shadow-sm">
-      <div class="card-body p-4 p-sm-5">
-        <div class="text-center mb-4">
-          <p class="brand-label text-uppercase fw-semibold text-gold mb-1">CNU Mailroom</p>
-          <h1 class="h2 fw-bold text-navy mb-0">Captain's Mail</h1>
+{% extends "base.html" %}
+{% from "_macros.html" import flash_messages %}
+
+{% block title %}Sign In{% endblock %}
+{% block main_class %}page-centered{% endblock %}
+
+{# Flashes go under the heading on this page #}
+{% block flashes %}{% endblock %}
+
+{% block content %}
+  <div class="page-heading text-center">
+    <p class="footnote text-secondary-label text-uppercase fw-semibold mb-1">CNU Mailroom</p>
+    <h1 class="large-title mb-0">Captain's Mail</h1>
+  </div>
+
+  {{ flash_messages() }}
+
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="inset-section">
+      <div class="inset-list">
+        <div class="inset-row">
+          <label for="username" class="inset-label">Username</label>
+          <input type="text" class="inset-input" id="username" name="username"
+                 value="{{ username or '' }}" autocomplete="username" autocapitalize="none"
+                 autocorrect="off" spellcheck="false" placeholder="Required" required autofocus>
         </div>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'message' else 'secondary' }} py-2" role="alert">
-              {{ message }}
-            </div>
-          {% endfor %}
-        {% endwith %}
-
-        <form method="post" novalidate>
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="mb-3">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control form-control-lg" id="username" name="username"
-                   value="{{ username or '' }}" autocomplete="username" autocapitalize="none"
-                   autocorrect="off" spellcheck="false" required autofocus>
-          </div>
-          <div class="mb-4">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control form-control-lg" id="password" name="password"
-                   autocomplete="current-password" required>
-          </div>
-          <button type="submit" class="btn btn-navy btn-lg w-100">Sign In</button>
-        </form>
-
-        <p class="text-center text-muted small mt-4 mb-0">Staff access only</p>
+        <div class="inset-row">
+          <label for="password" class="inset-label">Password</label>
+          <input type="password" class="inset-input" id="password" name="password"
+                 autocomplete="current-password" placeholder="Required" required>
+        </div>
       </div>
     </div>
-  </main>
-</body>
-</html>
+
+    <button type="submit" class="btn btn-primary btn-lg w-100">Sign In</button>
+  </form>
+
+  <p class="footnote text-secondary-label text-center mt-4 mb-0">Staff access only</p>
+{% endblock %}

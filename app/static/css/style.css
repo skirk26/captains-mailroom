@@ -1,86 +1,11 @@
-:root {
-  --cm-navy: #1C2B4A;
-  --cm-navy-dark: #131E34;
-  --cm-gold: #D9A441;
-  --cm-cream: #FAF6EE;
-}
+/* Page-specific layout. Colors, type, and spacing come from tokens.css;
+   shared components (buttons, lists, chips, alerts, nav bar) are in components.css. */
 
-body {
-  background-color: var(--cm-cream);
-  color: var(--cm-navy);
-}
-
-.text-navy {
-  color: var(--cm-navy);
-}
-
-.text-gold {
-  color: var(--cm-gold);
-}
-
-.btn-navy {
-  --bs-btn-color: #fff;
-  --bs-btn-bg: var(--cm-navy);
-  --bs-btn-border-color: var(--cm-navy);
-  --bs-btn-hover-color: #fff;
-  --bs-btn-hover-bg: var(--cm-navy-dark);
-  --bs-btn-hover-border-color: var(--cm-navy-dark);
-  --bs-btn-active-color: #fff;
-  --bs-btn-active-bg: var(--cm-navy-dark);
-  --bs-btn-active-border-color: var(--cm-navy-dark);
-  --bs-btn-disabled-color: #fff;
-  --bs-btn-disabled-bg: var(--cm-navy);
-  --bs-btn-disabled-border-color: var(--cm-navy);
-  --bs-btn-focus-shadow-rgb: 28, 43, 74;
-}
-
-.form-control:focus {
-  border-color: var(--cm-gold);
-  box-shadow: 0 0 0 0.25rem rgba(217, 164, 65, 0.25);
-}
-
-/* Login page */
-.login-wrapper {
-  min-height: 100vh;
-  min-height: 100dvh; /* avoids mobile browser toolbar jump */
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  border: none;
-  border-top: 4px solid var(--cm-gold);
-}
-
-.brand-label {
-  letter-spacing: 0.15em;
-  font-size: 0.8rem;
-}
-
-/* Error pages: the status code, large */
-.error-code {
-  font-size: 3.5rem;
+/* Error pages */
+.error-icon {
+  font-size: 2.75rem;
   line-height: 1;
-}
-
-.link-gold {
-  color: var(--cm-gold);
-  font-weight: 500;
-  text-decoration: none;
-}
-
-.link-gold:hover,
-.link-gold:focus {
-  color: var(--cm-gold);
-  text-decoration: underline;
-}
-
-/* A form button (e.g. Sign out) dressed as a gold link; .btn would otherwise reset the size */
-.btn.link-gold {
-  --bs-btn-font-size: 0.875em;
-  --bs-btn-color: var(--cm-gold);
-  --bs-btn-hover-color: var(--cm-gold);
-  --bs-btn-active-color: var(--cm-gold);
+  color: var(--color-silver);
 }
 
 /* App pages (header + content) */
@@ -89,26 +14,45 @@ body {
   min-height: 100dvh;
 }
 
+/* Scan and confirm pages keep their own header markup for now; it gets the
+   nav bar's look (see .nav-bar in components.css) */
 .app-header {
-  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  min-height: var(--nav-bar-height);
   flex-shrink: 0;
-  background-color: var(--cm-navy);
-  color: #fff;
+  background-color: var(--color-surface-translucent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 0.5px 0 var(--color-separator);
+  color: var(--color-text);
+}
+
+.app-header h1 {
+  color: var(--color-text);
+  font-size: var(--text-headline);
 }
 
 .header-back {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px; /* comfortable tap target */
-  height: 44px;
-  color: #fff;
-  border-radius: 50%;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  color: var(--color-brand-text);
+  border-radius: var(--radius-sm);
+}
+
+.header-back .icon {
+  width: 1.375rem;
+  height: 1.375rem;
 }
 
 .header-back:hover,
-.header-back:focus {
-  color: var(--cm-gold);
+.header-back:focus-visible {
+  color: var(--color-brand-text);
+  background-color: var(--color-brand-tint);
 }
 
 /* Check-in page */
@@ -116,8 +60,8 @@ body {
   position: relative;
   min-height: 60vh;
   min-height: 60dvh;
-  background-color: var(--cm-navy);
-  border-radius: 1.25rem;
+  background-color: var(--color-viewfinder);
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -130,7 +74,7 @@ body {
   transform: translate(-50%, -50%);
 }
 
-/* The library draws its own white corner markers; the gold brackets replace them */
+/* The library draws its own corner markers; the brackets below replace them */
 #qr-shaded-region > div {
   display: none !important;
 }
@@ -157,7 +101,7 @@ body {
   position: absolute;
   width: 32px;
   height: 32px;
-  border: 0 solid var(--cm-gold);
+  border: 0 solid var(--color-viewfinder-mark);
 }
 
 .scan-corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
@@ -166,8 +110,8 @@ body {
 .scan-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
 
 .scan-placeholder {
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.85rem;
+  color: var(--color-viewfinder-dim-text);
+  font-size: var(--text-footnote);
 }
 
 .scan-message {
@@ -177,8 +121,8 @@ body {
   display: none;
   flex-direction: column;
   justify-content: center;
-  padding: 1.5rem;
-  color: #fff;
+  padding: var(--space-6);
+  color: var(--color-viewfinder-text);
   text-align: center;
 }
 
@@ -198,7 +142,7 @@ body {
 
 /* Check-in confirm page */
 .tracking-input {
-  font-family: var(--bs-font-monospace);
+  font-family: var(--font-family-mono);
   letter-spacing: 0.03em;
 }
 
@@ -211,7 +155,7 @@ body {
 
 .form-control:user-invalid:focus,
 .form-select:user-invalid:focus {
-  box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.25);
+  box-shadow: 0 0 0 0.25rem var(--color-danger-ring);
 }
 
 .form-control:user-invalid ~ .invalid-feedback,
@@ -235,10 +179,10 @@ body {
   z-index: 10;
   left: var(--suggest-inset, 0);
   right: var(--suggest-inset, 0);
-  margin-top: 0.25rem;
+  margin-top: var(--space-1);
   max-height: 50vh;
   overflow-y: auto;
-  box-shadow: 0 0.5rem 1rem rgba(28, 43, 74, 0.15);
+  box-shadow: var(--shadow-raised), 0 0 0 0.5px var(--color-separator);
 }
 
 .suggest-list .list-group-item {
@@ -248,26 +192,25 @@ body {
 }
 
 .suggest-list .list-group-item.is-highlighted {
-  background-color: var(--cm-cream);
-  box-shadow: inset 4px 0 0 var(--cm-gold);
+  background-color: var(--color-brand-tint);
+  box-shadow: inset 4px 0 0 var(--color-brand);
 }
 
 /* Check-out confirm page */
 .package-card {
-  border: none;
-  border-top: 4px solid var(--cm-gold);
+  box-shadow: var(--shadow-raised);
 }
 
 .package-details {
   display: grid;
   grid-template-columns: max-content 1fr;
-  column-gap: 1rem;
-  row-gap: 0.5rem;
+  column-gap: var(--space-4);
+  row-gap: var(--space-2);
 }
 
 .package-details dt {
-  font-weight: 400;
-  color: var(--bs-secondary-color);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
 }
 
 .package-details dd {

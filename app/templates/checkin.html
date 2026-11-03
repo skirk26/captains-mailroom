@@ -1,33 +1,29 @@
+{% from "_macros.html" import flash_messages %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1C2B4A">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <title>Check In · Captain's Mail</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
   <div class="page-shell d-flex flex-column">
     <header class="app-header d-flex align-items-center px-2">
       <a href="{{ url_for('dashboard.dashboard') }}" class="header-back" aria-label="Back to dashboard">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
+        {{ icon("chevron-left") }}
       </a>
       <h1 class="h5 fw-semibold mb-0 ms-1">Check In</h1>
     </header>
 
     <main id="checkin" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting">
-      {% with messages = get_flashed_messages(with_categories=true) %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category if category != 'message' else 'secondary' }} py-2 mb-3" role="alert">
-            {{ message }}
-          </div>
-        {% endfor %}
-      {% endwith %}
+      {{ flash_messages() }}
 
       <div id="viewfinder" class="scan-viewfinder flex-grow-1">
         <!-- html5-qrcode empties #reader on start/stop, so overlays live beside it -->
@@ -48,7 +44,7 @@
 
       <p class="scan-instruction text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
       <p class="text-center mb-0">
-        <a href="#manual-entry" id="manual-entry-toggle" class="link-gold"
+        <a href="#manual-entry" id="manual-entry-toggle" class="app-link"
            aria-controls="manual-entry" aria-expanded="false">Can't scan? Enter tracking number manually</a>
       </p>
 
@@ -58,7 +54,7 @@
         <div class="d-flex gap-2">
           <input type="text" class="form-control form-control-lg" id="manual-tracking" name="tracking"
                  autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
-          <button type="submit" class="btn btn-navy btn-lg">Continue</button>
+          <button type="submit" class="btn btn-primary btn-lg">Continue</button>
         </div>
       </form>
     </main>

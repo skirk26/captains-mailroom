@@ -1,0 +1,38 @@
+{# Shared pieces of the design system. Import what a page needs:
+   {% from "_macros.html" import alert, flash_messages, status_chip, nav_back %} #}
+
+{# Category -> (alert style, icon). Status color always comes with an icon. #}
+{% set ALERT_STYLES = {
+  "success": ("success", "check-circle-fill"),
+  "warning": ("warning", "exclamation-triangle-fill"),
+  "danger": ("danger", "exclamation-octagon-fill"),
+  "info": ("info", "info-circle-fill"),
+} %}
+
+{# Inline alert. Use {% call alert("danger") %}message{% endcall %} #}
+{% macro alert(category, class_name="") -%}
+  {% set style, icon_name = ALERT_STYLES.get(category, ("secondary", "info-circle-fill")) %}
+  <div class="alert alert-{{ style }} {{ class_name }}" role="alert">
+    {{ icon(icon_name) }}
+    <div class="alert-body">{{ caller() }}</div>
+  </div>
+{%- endmacro %}
+
+{# Flashed messages, each as an inline alert #}
+{% macro flash_messages() -%}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      {% call alert(category, "mb-3") %}{{ message }}{% endcall %}
+    {% endfor %}
+  {% endwith %}
+{%- endmacro %}
+
+{# Status chip: kind is success, neutral, warning, or danger; label is the word #}
+{% macro status_chip(kind, icon_name, class_name="") -%}
+  <span class="status-chip status-{{ kind }} {{ class_name }}">{{ icon(icon_name) }}<span>{{ caller() }}</span></span>
+{%- endmacro %}
+
+{# Back button for the nav bar's leading slot #}
+{% macro nav_back(url, label="Back") -%}
+  <a href="{{ url }}" class="nav-bar-button">{{ icon("chevron-left") }}<span>{{ label }}</span></a>
+{%- endmacro %}

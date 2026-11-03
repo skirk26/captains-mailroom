@@ -1,0 +1,496 @@
+/* Captain's Mail components, layered over Bootstrap 5.3. Every value comes
+   from tokens.css. See docs/design-system.md for how to use each one. */
+
+/* ---- Bootstrap, re-themed with the tokens ---- */
+:root {
+  --bs-body-font-family: var(--font-family);
+  --bs-body-font-size: var(--text-body);
+  --bs-body-line-height: var(--line-height-body);
+  --bs-body-color: var(--color-text);
+  --bs-body-bg: var(--color-bg);
+  --bs-emphasis-color: var(--color-text);
+  --bs-secondary-color: var(--color-text-secondary);
+  --bs-tertiary-color: var(--color-text-secondary);
+  --bs-heading-color: var(--color-brand-text);
+  --bs-link-color: var(--color-brand-text);
+  --bs-link-hover-color: var(--color-brand-text);
+  --bs-border-color: var(--color-silver);
+  --bs-secondary-bg: var(--color-bg);
+  --bs-tertiary-bg: var(--color-bg);
+  --bs-font-monospace: var(--font-family-mono);
+  --bs-focus-ring-color: var(--color-focus-ring);
+  --bs-form-invalid-color: var(--color-danger);
+  --bs-form-invalid-border-color: var(--color-danger);
+  --bs-form-valid-border-color: var(--color-silver);
+}
+
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Notch and home-indicator areas (needs viewport-fit=cover) */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+h1, h2, h3, .large-title, .title-1, .title-2, .title-3 {
+  color: var(--color-brand-text);
+  line-height: var(--line-height-tight);
+}
+
+/* ---- Type scale ---- */
+.large-title { font-size: var(--text-large-title); font-weight: var(--weight-bold); letter-spacing: -0.01em; }
+.title-1 { font-size: var(--text-title-1); font-weight: var(--weight-bold); }
+.title-2 { font-size: var(--text-title-2); font-weight: var(--weight-bold); }
+.title-3 { font-size: var(--text-title-3); font-weight: var(--weight-semibold); }
+.headline { font-size: var(--text-headline); font-weight: var(--weight-semibold); }
+.subheadline { font-size: var(--text-subheadline); }
+.footnote { font-size: var(--text-footnote); }
+.caption { font-size: var(--text-caption); }
+.text-secondary-label { color: var(--color-text-secondary); }
+.mono { font-family: var(--font-family-mono); }
+
+/* ---- Icons (inline SVG, sized by the surrounding text) ---- */
+.icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  fill: currentColor;
+  vertical-align: -0.125em;
+}
+
+/* ---- Page layout (base.html) ---- */
+.page-content {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--space-4) var(--space-4) calc(var(--space-8) + env(safe-area-inset-bottom));
+}
+
+/* Pages without a nav bar start below the status bar themselves */
+.page-content-no-nav {
+  padding-top: calc(var(--space-10) + env(safe-area-inset-top));
+}
+
+/* Vertically centered single-card pages (sign in, errors) */
+.page-centered {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.page-heading {
+  margin-bottom: var(--space-6);
+}
+
+/* ---- Navigation bar: back button left, title centered, action right ---- */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: calc(var(--nav-bar-height) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) var(--space-2) 0;
+  background-color: var(--color-surface-translucent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 0.5px 0 var(--color-separator);
+}
+
+.nav-bar-title {
+  margin: 0;
+  padding: 0 var(--space-2);
+  font-size: var(--text-headline);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-bar-leading { justify-self: start; display: flex; }
+.nav-bar-trailing { justify-self: end; display: flex; }
+
+/* Text or icon button in the nav bar (Back, Sign out) */
+.nav-bar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-brand-text);
+  font-size: var(--text-body);
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity var(--duration-fast) var(--easing-standard);
+}
+
+.nav-bar-button:hover { color: var(--color-brand-text); }
+.nav-bar-button:active { opacity: 0.5; }
+
+.nav-bar-button .icon {
+  width: 1.25em;
+  height: 1.25em;
+}
+
+/* ---- Buttons: .btn-primary, .btn-secondary, .btn-destructive ---- */
+.btn {
+  --bs-btn-font-size: var(--text-body);
+  --bs-btn-font-weight: var(--weight-semibold);
+  --bs-btn-border-radius: var(--radius-md);
+  --bs-btn-padding-y: var(--space-2);
+  --bs-btn-padding-x: var(--space-4);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-focus-box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  transition: background-color var(--duration-fast) var(--easing-standard),
+              opacity var(--duration-fast) var(--easing-standard);
+}
+
+.btn-lg {
+  --bs-btn-font-size: var(--text-body);
+  --bs-btn-padding-y: var(--space-3);
+  --bs-btn-border-radius: var(--radius-md);
+  min-height: 50px;
+}
+
+.btn-primary {
+  --bs-btn-color: var(--color-on-brand);
+  --bs-btn-bg: var(--color-brand);
+  --bs-btn-border-color: var(--color-brand);
+  --bs-btn-hover-color: var(--color-on-brand);
+  --bs-btn-hover-bg: var(--color-brand-pressed);
+  --bs-btn-hover-border-color: var(--color-brand-pressed);
+  --bs-btn-active-color: var(--color-on-brand);
+  --bs-btn-active-bg: var(--color-brand-pressed);
+  --bs-btn-active-border-color: var(--color-brand-pressed);
+}
+
+.btn-secondary {
+  --bs-btn-color: var(--color-brand-text);
+  --bs-btn-bg: var(--color-brand-tint);
+  --bs-btn-border-color: var(--color-brand-tint);
+  --bs-btn-hover-color: var(--color-brand-text);
+  --bs-btn-hover-bg: var(--color-brand-tint-pressed);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--color-brand-text);
+  --bs-btn-active-bg: var(--color-brand-tint-pressed);
+  --bs-btn-active-border-color: transparent;
+}
+
+.btn-destructive {
+  --bs-btn-color: var(--color-on-danger);
+  --bs-btn-bg: var(--color-danger-fill);
+  --bs-btn-border-color: var(--color-danger-fill);
+  --bs-btn-hover-color: var(--color-on-danger);
+  --bs-btn-hover-bg: var(--color-danger-fill-pressed);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--color-on-danger);
+  --bs-btn-active-bg: var(--color-danger-fill-pressed);
+  --bs-btn-active-border-color: transparent;
+}
+
+/* Disabled: CNU Silver fill, same for every variant */
+.btn:disabled,
+.btn.disabled {
+  --bs-btn-disabled-color: var(--color-on-disabled);
+  --bs-btn-disabled-bg: var(--color-fill-disabled);
+  --bs-btn-disabled-border-color: var(--color-fill-disabled);
+}
+
+/* Loading: add aria-busy="true" (and disabled) while a form is submitting.
+   A spinner appears before the label. */
+.btn[aria-busy="true"]::before {
+  content: "";
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 0.7s linear infinite;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Plain brand-colored text link, at least 44px tall to tap */
+.app-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  color: var(--color-brand-text);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.app-link:hover,
+.app-link:focus-visible {
+  color: var(--color-brand-text);
+  text-decoration: underline;
+}
+
+/* ---- Form controls ---- */
+.form-control,
+.form-select {
+  min-height: var(--touch-target);
+  font-size: var(--text-body); /* 17px: iOS zooms into inputs under 16px */
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.form-control-lg,
+.form-select-lg {
+  font-size: var(--text-body);
+  border-radius: var(--radius-md);
+  min-height: 50px;
+}
+
+.form-control::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--color-brand-text);
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Select arrow in CNU Silver, visible in light and dark mode */
+.form-select {
+  --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2384888B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+
+.form-label {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.form-text {
+  color: var(--color-text-secondary);
+  font-size: var(--text-footnote);
+}
+
+/* ---- Inset grouped list: forms and detail rows ----
+   <div class="inset-list">
+     <div class="inset-row">
+       <label class="inset-label">…</label> <input class="inset-input"> | <span class="inset-value">…</span>
+     </div>
+   </div>  */
+.inset-section {
+  margin-bottom: var(--space-6);
+}
+
+.inset-header,
+.inset-footer {
+  margin: 0;
+  padding: 0 var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-footnote);
+}
+
+.inset-header {
+  padding-bottom: var(--space-2);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.inset-footer {
+  padding-top: var(--space-2);
+}
+
+.inset-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.inset-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-4);
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* Hairline between rows, inset from the leading edge like iOS */
+.inset-row + .inset-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: 0;
+  border-top: 1px solid var(--color-separator);
+}
+
+@media (min-resolution: 2dppx) {
+  .inset-row + .inset-row::before {
+    border-top-width: 0.5px;
+  }
+}
+
+.inset-label {
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+  margin: 0;
+  color: var(--color-text);
+  font-weight: var(--weight-regular);
+}
+
+.inset-value {
+  flex: 1 1 auto;
+  margin: 0;
+  text-align: right;
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* A text field filling the rest of the row, no box of its own */
+.inset-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  text-align: right;
+}
+
+.inset-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+.inset-input:focus {
+  outline: none;
+}
+
+/* Focus ring on the whole row instead of the borderless field */
+.inset-row:focus-within {
+  box-shadow: inset 0 0 0 2px var(--bs-focus-ring-color);
+}
+
+/* A whole row that navigates (icon, title, chevron) */
+a.inset-row {
+  min-height: 56px;
+  text-decoration: none;
+  transition: background-color var(--duration-fast) var(--easing-standard);
+}
+
+a.inset-row:hover { color: var(--color-text); }
+a.inset-row:active { background-color: var(--color-bg); }
+a.inset-row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bs-focus-ring-color); }
+
+.inset-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.inset-row-title {
+  flex: 1 1 auto;
+}
+
+.inset-row-chevron {
+  color: var(--color-silver);
+}
+
+/* ---- Status chips: color + icon + word ---- */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-subheadline);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-height-tight);
+}
+
+.status-success { color: var(--color-success); background-color: var(--color-success-bg); }
+.status-neutral { color: var(--color-neutral); background-color: var(--color-neutral-bg); }
+.status-warning { color: var(--color-warning); background-color: var(--color-warning-bg); }
+.status-danger  { color: var(--color-danger);  background-color: var(--color-danger-bg); }
+
+/* ---- Inline alerts: color + icon + message (see _macros.html alert()) ---- */
+.alert {
+  --bs-alert-border-color: transparent;
+  --bs-alert-border-radius: var(--radius-lg);
+  --bs-alert-padding-x: var(--space-4);
+  --bs-alert-padding-y: var(--space-3);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-subheadline);
+}
+
+.alert > .icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.05rem;
+}
+
+.alert-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.alert-success   { --bs-alert-color: var(--color-success); --bs-alert-bg: var(--color-success-bg); }
+.alert-warning   { --bs-alert-color: var(--color-warning); --bs-alert-bg: var(--color-warning-bg); }
+.alert-danger    { --bs-alert-color: var(--color-danger);  --bs-alert-bg: var(--color-danger-bg); }
+.alert-info      { --bs-alert-color: var(--color-info);    --bs-alert-bg: var(--color-info-bg); }
+.alert-secondary { --bs-alert-color: var(--color-neutral); --bs-alert-bg: var(--color-neutral-bg); }
+
+.alert .app-link,
+.alert a {
+  color: inherit;
+}
+
+/* ---- Cards ---- */
+.card {
+  --bs-card-bg: var(--color-surface);
+  --bs-card-border-width: 0;
+  --bs-card-border-radius: var(--radius-lg);
+  --bs-card-color: var(--color-text);
+}
+
+/* Bootstrap lists (recipient suggestions) */
+.list-group {
+  --bs-list-group-bg: var(--color-surface);
+  --bs-list-group-color: var(--color-text);
+  --bs-list-group-border-color: var(--color-separator);
+  --bs-list-group-action-hover-bg: var(--color-bg);
+  --bs-list-group-action-hover-color: var(--color-text);
+  --bs-list-group-action-active-bg: var(--color-brand-tint);
+  --bs-list-group-action-active-color: var(--color-text);
+  --bs-list-group-border-radius: var(--radius-md);
+}

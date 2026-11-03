@@ -1,5 +1,5 @@
 // Barcode scanning for the check-in and check-out pages. Relies on
-// html5-qrcode, which the page loads from the CDN before this file.
+// html5-qrcode, which the page loads (from static/vendor/) before this file.
 //
 // Each page sets these on its #reader element:
 //   data-confirm-url        where to go with ?tracking=<decoded value>
@@ -78,7 +78,7 @@ function showMessage(title, body) {
 // the camera image using the video's unscaled clientWidth/clientHeight. A CSS
 // transform doesn't change those, so scaling #reader lets the video cover the
 // viewfinder while the scan box (shrunk by the same factor) still lines up
-// exactly with the gold brackets.
+// exactly with the corner brackets.
 function coverScale() {
   return Math.max(
     viewfinder.clientWidth / videoSize.width,

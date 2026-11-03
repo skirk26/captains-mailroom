@@ -7,6 +7,7 @@ const pickupLabel = pickupButton.textContent;
 
 pickupForm.addEventListener("submit", () => {
   pickupButton.disabled = true;
+  pickupButton.setAttribute("aria-busy", "true"); // components.css shows a spinner
   pickupButton.textContent = "Saving…";
 });
 
@@ -14,6 +15,7 @@ pickupForm.addEventListener("submit", () => {
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     pickupButton.disabled = false;
+    pickupButton.removeAttribute("aria-busy");
     pickupButton.textContent = pickupLabel;
   }
 });

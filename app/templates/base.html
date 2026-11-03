@@ -1,0 +1,36 @@
+{% from "_macros.html" import flash_messages %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  {# viewport-fit=cover lets the page use the full screen; the safe-area padding
+     in components.css keeps content clear of the notch and home indicator #}
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <title>{% block title %}{% endblock %} · Captain's Mail</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {# Nav bar: shown when a page fills in nav_title #}
+  {% set nav_title = self.nav_title() | trim %}
+  {% if nav_title %}
+    <header class="nav-bar">
+      <div class="nav-bar-leading">{% block nav_leading %}{% endblock %}</div>
+      <h1 class="nav-bar-title">{% block nav_title %}{% endblock %}</h1>
+      <div class="nav-bar-trailing">{% block nav_trailing %}{% endblock %}</div>
+    </header>
+  {% endif %}
+
+  <main class="page-content {% if not nav_title %}page-content-no-nav{% endif %} {% block main_class %}{% endblock %}">
+    {% block flashes %}{{ flash_messages() }}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

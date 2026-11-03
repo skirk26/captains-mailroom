@@ -1,27 +1,18 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1C2B4A">
-  <title>{{ title }} · Captain's Mail</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  {# Shown for 400/403/404/405/429/500. Only fixed text from app/routes/errors.py:
-     never the exception, a stack trace, or a file path. #}
-  <main class="login-wrapper d-flex align-items-center justify-content-center px-3 py-4">
-    <div class="card login-card shadow-sm">
-      <div class="card-body p-4 p-sm-5 text-center">
-        <p class="brand-label text-uppercase fw-semibold text-gold mb-1">Captain's Mail</p>
-        <p class="error-code fw-bold text-navy mb-1">{{ code }}</p>
-        <h1 class="h4 fw-bold text-navy mb-3">{{ title }}</h1>
-        <p class="text-muted mb-4">{{ message }}</p>
-        {# "/" goes to the dashboard, or to sign in if the session has ended #}
-        <a href="/" class="btn btn-navy btn-lg w-100">Back to Captain's Mail</a>
-      </div>
-    </div>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+
+{# Shown for 400/403/404/405/429/500. Only fixed text from app/routes/errors.py:
+   never the exception, a stack trace, or a file path. #}
+
+{% block title %}{{ title }}{% endblock %}
+{% block main_class %}page-centered text-center{% endblock %}
+{% block flashes %}{% endblock %}
+
+{% block content %}
+  <p class="footnote text-secondary-label text-uppercase fw-semibold mb-3">Captain's Mail</p>
+  <p class="error-icon mb-3">{{ icon("exclamation-triangle-fill") }}</p>
+  <p class="footnote text-secondary-label mb-1">Error {{ code }}</p>
+  <h1 class="title-1 mb-3">{{ title }}</h1>
+  <p class="text-secondary-label mb-4">{{ message }}</p>
+  {# "/" goes to the dashboard, or to sign in if the session has ended #}
+  <a href="/" class="btn btn-primary btn-lg w-100">Back to Captain's Mail</a>
+{% endblock %}

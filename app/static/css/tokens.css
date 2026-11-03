@@ -1,0 +1,149 @@
+/* Captain's Mail design tokens: every color, spacing step, radius, type size,
+   and timing the app uses. Change the theme here; components.css and
+   style.css only refer to these names. See docs/design-system.md. */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Brand (cnu.edu/brand/colors.html) ---- */
+  --color-brand: #1B386D;          /* CNU Blue: primary buttons, navigation */
+  --color-brand-pressed: #142A52;  /* pressed/hover state of brand fills */
+  --color-brand-text: #1B386D;     /* brand-colored text, links, headings, icons */
+  --color-brand-tint: #E3E9F3;     /* secondary button and selected-row fill */
+  --color-brand-tint-pressed: #CDD7E8;
+  --color-focus-ring: rgb(27 56 109 / 0.35);
+  --color-on-brand: #FFFFFF;       /* text on brand fills */
+  --color-silver: #84888B;         /* CNU Silver: borders, dividers, icons, disabled. Never text (3.6:1) */
+
+  /* ---- Surfaces and text ---- */
+  --color-bg: #F2F3F5;             /* page background (grouped) */
+  --color-surface: #FFFFFF;        /* cards, lists, nav bar */
+  --color-surface-translucent: rgb(255 255 255 / 0.85);
+  --color-text: #16191D;           /* primary text */
+  --color-text-secondary: #5F656B; /* captions, labels: 5.3:1 on --color-bg */
+  --color-separator: rgb(132 136 139 / 0.45); /* hairlines: CNU Silver, softened */
+  --color-fill-disabled: #84888B;  /* disabled button fill (CNU Silver) */
+  --color-on-disabled: #FFFFFF;
+
+  /* ---- Status: always shown with an icon and a word ---- */
+  --color-success: #1E6B34;        /* checked in */
+  --color-success-bg: #E4F3E8;
+  --color-neutral: #4A5056;        /* picked up, entered manually */
+  --color-neutral-bg: #E8E9EB;
+  --color-warning: #7A4A00;        /* warnings */
+  --color-warning-bg: #FDF0D5;
+  --color-danger: #A4211A;         /* errors (text) */
+  --color-danger-bg: #FBE7E5;
+  --color-danger-fill: #B3261E;    /* destructive button fill */
+  --color-danger-fill-pressed: #8F1E18;
+  --color-danger-ring: rgb(164 33 26 / 0.3); /* focus ring on an invalid field */
+  --color-on-danger: #FFFFFF;          /* text on destructive buttons */
+  --color-info: #1B386D;           /* neutral notices, e.g. "signed out" */
+  --color-info-bg: #E6ECF6;
+
+  /* Camera viewfinder: always dark so the live image reads well */
+  --color-viewfinder: #000000;
+  --color-viewfinder-mark: #FFFFFF;     /* scan-area corner brackets */
+  --color-viewfinder-text: #FFFFFF;     /* camera error messages */
+  --color-viewfinder-dim-text: rgb(255 255 255 / 0.7);
+
+  /* ---- Typography (system fonts only; nothing is downloaded) ---- */
+  --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --text-large-title: 2.125rem;    /* 34px */
+  --text-title-1: 1.75rem;         /* 28px */
+  --text-title-2: 1.375rem;        /* 22px */
+  --text-title-3: 1.25rem;         /* 20px */
+  --text-headline: 1.0625rem;      /* 17px, semibold */
+  --text-body: 1.0625rem;          /* 17px */
+  --text-callout: 1rem;            /* 16px: the smallest size for inputs (iOS zooms below this) */
+  --text-subheadline: 0.9375rem;   /* 15px */
+  --text-footnote: 0.8125rem;      /* 13px */
+  --text-caption: 0.75rem;         /* 12px */
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --line-height-body: 1.4;
+  --line-height-tight: 1.2;
+
+  /* ---- Spacing (4px grid) ---- */
+  --space-1: 0.25rem;  /* 4px */
+  --space-2: 0.5rem;   /* 8px */
+  --space-3: 0.75rem;  /* 12px */
+  --space-4: 1rem;     /* 16px: page margin, row padding */
+  --space-5: 1.25rem;  /* 20px */
+  --space-6: 1.5rem;   /* 24px */
+  --space-8: 2rem;     /* 32px */
+  --space-10: 2.5rem;  /* 40px */
+
+  /* ---- Shape and size ---- */
+  --radius-sm: 0.5rem;   /* 8px: chips' inner parts, small controls */
+  --radius-md: 0.75rem;  /* 12px: buttons, inputs */
+  --radius-lg: 0.875rem; /* 14px: cards, inset lists */
+  --radius-pill: 999px;
+  --touch-target: 44px;  /* minimum tappable size */
+  --nav-bar-height: 44px;
+  --content-max-width: 34rem; /* readable column on tablets and laptops */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.06);
+
+  /* ---- Motion ---- */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Dark mode: lighter brand and status colors so text keeps 4.5:1+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-brand: #2B5299;          /* CNU Blue lifted for dark backgrounds */
+    --color-brand-pressed: #23457F;
+    --color-brand-text: #9DB8EC;
+    --color-brand-tint: #1E2A40;
+    --color-brand-tint-pressed: #2A3A57;
+    --color-focus-ring: rgb(157 184 236 / 0.5);
+    --color-on-brand: #FFFFFF;
+    --color-silver: #84888B;
+
+    --color-bg: #000000;
+    --color-surface: #1C1C1E;
+    --color-surface-translucent: rgb(28 28 30 / 0.85);
+    --color-text: #F2F3F5;
+    --color-text-secondary: #A3A8AD;
+    --color-separator: rgb(132 136 139 / 0.5);
+    --color-fill-disabled: #4A4D50;
+    --color-on-disabled: #C3C7CB;
+
+    --color-success: #7DD69A;
+    --color-success-bg: #16301F;
+    --color-neutral: #C3C7CB;
+    --color-neutral-bg: #2A2C2F;
+    --color-warning: #F5C46B;
+    --color-warning-bg: #33270F;
+    --color-danger: #FF9C94;
+    --color-danger-bg: #3A1715;
+    --color-danger-fill: #C4372E;
+    --color-danger-fill-pressed: #A12B23;
+    --color-danger-ring: rgb(255 156 148 / 0.4);
+    --color-info: #9DB8EC;
+    --color-info-bg: #172338;
+
+    --shadow-raised: none;
+  }
+}
+
+/* No animated transitions for people who ask their device for less motion */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

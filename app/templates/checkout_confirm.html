@@ -1,11 +1,16 @@
+{% from "_macros.html" import alert, status_chip %}
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1C2B4A">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <title>Confirm Pickup · Captain's Mail</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -18,39 +23,34 @@
   <div class="page-shell d-flex flex-column">
     <header class="app-header d-flex align-items-center px-2">
       <a href="{{ url_for('checkout.checkout') }}" class="header-back" aria-label="Back to scanner">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
+        {{ icon("chevron-left") }}
       </a>
       <h1 class="h5 fw-semibold mb-0 ms-1">Confirm Pickup</h1>
     </header>
 
     <main class="flex-grow-1 px-3 pt-4 pb-4">
       {% if state == "not_found" %}
-        <div class="alert alert-danger" role="alert">
+        {% call alert("danger") %}
           <p class="fw-semibold mb-1">No package found with this tracking number.</p>
           <p class="tracking-input mb-0 text-break">{{ tracking }}</p>
-        </div>
+        {% endcall %}
         <p class="mb-0">
-          <a href="{{ url_for('checkin.confirm', tracking=tracking, source=source or None) }}" class="link-gold">Check it in now</a>
+          <a href="{{ url_for('checkin.confirm', tracking=tracking, source=source or None) }}" class="app-link">Check it in now</a>
         </p>
 
       {% else %}
         {% for error in errors %}
-          <div class="alert alert-danger py-2 mb-3" role="alert">{{ error }}</div>
+          {% call alert("danger", "mb-3") %}{{ error }}{% endcall %}
         {% endfor %}
 
         <div class="card package-card shadow-sm mb-4">
           <div class="card-body">
             {% if state == "picked_up" %}
-              <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle px-3 py-2 mb-3">
+              {% call status_chip("neutral", "bag-check-fill", "mb-3") %}
                 Picked up{% if package.checked_out_at %} {{ local_time(package.checked_out_at) }}{% endif %}
-              </span>
+              {% endcall %}
             {% else %}
-              <span class="badge rounded-pill bg-success-subtle text-success-emphasis border border-success-subtle px-3 py-2 mb-3">
-                Checked in
-              </span>
+              {% call status_chip("success", "check-circle-fill", "mb-3") %}Checked in{% endcall %}
             {% endif %}
 
             <p class="small text-muted mb-1">Tracking number</p>
@@ -105,7 +105,7 @@
                      inputmode="numeric" autocomplete="off" maxlength="20"
                      value="{{ student_id }}" placeholder="ID of the person picking it up">
             </div>
-            <button type="submit" id="pickup-button" class="btn btn-navy btn-lg w-100">Mark as Picked Up</button>
+            <button type="submit" id="pickup-button" class="btn btn-primary btn-lg w-100">Mark as Picked Up</button>
           </form>
         {% endif %}
       {% endif %}

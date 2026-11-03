@@ -8,6 +8,7 @@ const saveLabel = saveButton.textContent;
 // Only fires once the browser's own checks (required, box pattern) have passed
 checkinForm.addEventListener("submit", () => {
   saveButton.disabled = true;
+  saveButton.setAttribute("aria-busy", "true"); // components.css shows a spinner
   saveButton.textContent = "Saving…";
 });
 
@@ -15,6 +16,7 @@ checkinForm.addEventListener("submit", () => {
 window.addEventListener("pageshow", (event) => {
   if (event.persisted) {
     saveButton.disabled = false;
+    saveButton.removeAttribute("aria-busy");
     saveButton.textContent = saveLabel;
   }
 });
