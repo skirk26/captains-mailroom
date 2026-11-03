@@ -57,6 +57,12 @@ body {
   font-size: 0.8rem;
 }
 
+/* Error pages: the status code, large */
+.error-code {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
 .link-gold {
   color: var(--cm-gold);
   font-weight: 500;

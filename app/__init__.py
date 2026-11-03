@@ -4,6 +4,8 @@ from datetime import timedelta
 
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, request, session, url_for
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_login import LoginManager, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFError, CSRFProtect
@@ -13,6 +15,9 @@ load_dotenv()
 db = SQLAlchemy()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+# In-memory counts: per server process, and reset when the server restarts.
+# Keyed by the client's IP as the server sees it.
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
 APP_ENVS = ("development", "production")
 # Only acceptable in development; production refuses to start with any of these
@@ -70,9 +75,16 @@ def create_app(test_config=None):
     # session_protection stays at Flask-Login's "basic": "strong" would sign staff
     # out whenever their phone switches between Wi-Fi and cellular
     csrf.init_app(app)
+    limiter.init_app(app)
 
     register_session_timeouts(app)
     register_csrf_error_handler(app)
+
+    from app.routes.errors import register_error_pages
+    from app.security import register_security_headers
+
+    register_error_pages(app)
+    register_security_headers(app)
 
     # Importing models registers the tables; create_all only adds missing ones
     from app import models  # noqa: F401
@@ -144,7 +156,9 @@ def register_csrf_error_handler(app):
     @app.errorhandler(CSRFError)
     def csrf_failed(error):
         if current_user.is_authenticated:
-            return error  # a 400 Bad Request
+            from app.routes.errors import render_error
+
+            return render_error(400)
         # Usually a form left open past the 30-minute timeout: the expired session
         # took its CSRF token with it, so send staff to sign in rather than an error
         flash("Your session has expired. Please sign in again.", "warning")

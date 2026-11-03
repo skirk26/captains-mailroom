@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 Flask-Login
 python-dotenv
 Flask-WTF
+Flask-Limiter

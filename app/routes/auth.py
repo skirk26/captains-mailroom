@@ -1,23 +1,39 @@
 import time
+from urllib.parse import urlsplit
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
-from app import SIGNED_IN_AT, db
+from app import SIGNED_IN_AT, db, limiter
 from app.models import Staff
 
 bp = Blueprint("auth", __name__)
 
 
+def is_safe_next_url(target):
+    # Only same-site paths like /checkout?x=1. Anything starting "//" (or
+    # "///") is another site to a browser. Browsers also treat "\" as "/", so
+    # "/\evil.com" means "//evil.com"; and they strip tabs and newlines, so
+    # control characters are refused as well.
+    if not target.startswith("/") or target.startswith("//") or "\\" in target:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in target):
+        return False
+    parts = urlsplit(target)
+    return not parts.scheme and not parts.netloc
+
+
 def safe_next_url():
-    # Only follow same-site paths, so ?next= can't bounce users to another site
     target = request.args.get("next", "")
-    if target.startswith("/") and not target.startswith("//"):
-        return target
-    return "/"
+    return target if is_safe_next_url(target) else "/"
+
+
+LOGIN_RATE_LIMIT = "5 per minute"
 
 
 @bp.route("/login", methods=["GET", "POST"])
+# Per IP, POSTs only, so loading the page doesn't use up attempts
+@limiter.limit(LOGIN_RATE_LIMIT, methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect("/")
