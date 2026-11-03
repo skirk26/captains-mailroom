@@ -8,7 +8,12 @@ from app.models import Package, Recipient, Staff
 @pytest.fixture
 def app():
     # In-memory database, so tests never touch instance/captains_mail.db
-    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite://"})
+    app = create_app({
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite://",
+        "SECRET_KEY": "test-only-secret-key",
+        "WTF_CSRF_ENABLED": False,  # tests/test_security.py checks CSRF itself
+    })
     with app.app_context():
         yield app
         db.session.remove()

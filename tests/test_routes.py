@@ -12,7 +12,12 @@ UPS_TRACKING = "1Z999AA10123456784"
 @pytest.fixture
 def app():
     # In-memory database: created fresh for each test, never touches instance/
-    app = create_app({"TESTING": True, "SQLALCHEMY_DATABASE_URI": "sqlite://"})
+    app = create_app({
+        "TESTING": True,
+        "SQLALCHEMY_DATABASE_URI": "sqlite://",
+        "SECRET_KEY": "test-only-secret-key",
+        "WTF_CSRF_ENABLED": False,  # tests/test_security.py checks CSRF itself
+    })
     with app.app_context():
         staff = Staff(username="tester")
         staff.set_password(PASSWORD)

@@ -97,6 +97,7 @@
           <p class="text-center text-muted mb-0">No further action needed.</p>
         {% else %}
           <form id="pickup-form" method="post" action="{{ url_for('checkout.confirm') }}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="tracking" value="{{ package.tracking_number }}">
             <div class="mb-4">
               <label for="student-id" class="form-label fw-semibold">Student ID <span class="text-muted fw-normal">(optional)</span></label>

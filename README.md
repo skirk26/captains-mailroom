@@ -18,6 +18,16 @@ pip install -r requirements.txt
 copy .env.example .env         # then set a real SECRET_KEY in .env
 ```
 
+### Settings (`.env`)
+
+| Setting | Values | What it does |
+|---|---|---|
+| `APP_ENV` | `production` (default) or `development` | `production` turns on Secure cookies and HSTS, and refuses to start without a real `SECRET_KEY`. Use `development` for local testing. |
+| `SECRET_KEY` | long random string | Signs session cookies. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
+| `FLASK_DEBUG` | `0` (default) or `1` | Debug mode: auto-reload and the in-browser debugger. Never `1` on a real server. |
+
+Staff are signed out after 30 minutes of inactivity, or 12 hours after signing in.
+
 ## Create a staff account
 
 ```bash
@@ -40,8 +50,11 @@ temporary certificate:
 
 ```bash
 venv\Scripts\python.exe -m pip install cryptography
-venv\Scripts\python.exe -m flask --app run run --host 0.0.0.0 --port 5000 --cert adhoc --debug
+venv\Scripts\python.exe -m flask --app run run --host 0.0.0.0 --port 5000 --cert adhoc
 ```
+
+Set `APP_ENV=development` in `.env` for this, and `FLASK_DEBUG=1` if you want
+auto-reload.
 
 Open the `https://<your-computer's-IP>:5000/checkin` address it prints on your
 phone, and accept the certificate warning (Advanced → Proceed).

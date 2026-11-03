@@ -11,7 +11,11 @@
 <body>
   <header class="app-header d-flex align-items-center justify-content-between px-3">
     <h1 class="h5 fw-semibold mb-0">Captain's Mail</h1>
-    <a href="{{ url_for('auth.logout') }}" class="link-gold small">Sign out</a>
+    {# POST, not a link, so another site can't sign staff out #}
+    <form method="post" action="{{ url_for('auth.logout') }}" class="mb-0">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-link link-gold p-0 border-0 align-baseline">Sign out</button>
+    </form>
   </header>
 
   <!-- Placeholder dashboard: real content comes later -->

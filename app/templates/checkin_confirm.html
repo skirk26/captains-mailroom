@@ -43,6 +43,7 @@
 
       <form id="checkin-form" method="post" action="{{ url_for('checkin.confirm') }}"
             data-search-url="{{ url_for('checkin.search_recipients') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if errors %}
           <div class="alert alert-danger" role="alert">
             {% if errors|length == 1 %}

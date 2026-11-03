@@ -69,6 +69,14 @@ body {
   text-decoration: underline;
 }
 
+/* A form button (e.g. Sign out) dressed as a gold link; .btn would otherwise reset the size */
+.btn.link-gold {
+  --bs-btn-font-size: 0.875em;
+  --bs-btn-color: var(--cm-gold);
+  --bs-btn-hover-color: var(--cm-gold);
+  --bs-btn-active-color: var(--cm-gold);
+}
+
 /* App pages (header + content) */
 .page-shell {
   min-height: 100vh;
