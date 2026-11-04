@@ -622,7 +622,7 @@ def test_photo_page_opens_the_rear_camera(client):
     assert 'accept="image/*" capture="environment"' in html
     assert "<span>Take Photo</span>" in html
     assert 'aria-controls="photo-input"' in html
-    assert 'id="photo-use" class="btn btn-primary btn-lg" disabled>Use Photo' in html
+    assert 'id="photo-use" class="btn btn-primary btn-lg"><span>Use Photo</span>' in html
     assert "<span>Retake</span>" in html
     assert "js/checkin_photo.js" in html
     assert 'data-state="empty"' in html
@@ -643,12 +643,12 @@ def test_photo_page_skip_link(client):
 def test_photo_page_shows_existing_photo(client):
     post_checkin(client, box_number="1815")
     package = all_packages()[0]
-    package.location_photo_path = "shelf-a.jpg"  # no upload step yet, so set it directly
+    package.location_photo_path = "shelf-a.jpg"  # set directly, without an upload
     db.session.commit()
 
     html = photo_page(client, package).get_data(as_text=True)
     assert 'data-state="existing"' in html
-    assert 'src="/static/uploads/shelf-a.jpg"' in html
+    assert 'src="/photos/shelf-a.jpg"' in html
 
 
 def test_photo_page_unknown_package_is_404(client):

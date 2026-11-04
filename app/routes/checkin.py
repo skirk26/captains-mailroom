@@ -1,13 +1,14 @@
 # Package check-in routes: scan label, assign recipient, photograph storage location.
 import re
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import func, or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
 from app.models import Package, Recipient
+from app.photos import PhotoRejected, delete_photo, prepare_photo, store_photo
 
 checkin_bp = Blueprint("checkin", __name__)
 
@@ -28,6 +29,8 @@ NAME_MAX_LENGTH = 50
 NOTES_MAX_LENGTH = 500
 BOX_MIN, BOX_MAX = 1000, 5199
 DUPLICATE_MESSAGE = "This package has already been checked in."
+PICKED_UP_MESSAGE = "This package has already been picked up."
+PHOTO_SAVE_FAILED = "The photo couldn't be saved. Try again."
 SEARCH_MIN_LENGTH = 2
 SEARCH_LIMIT = 8
 
@@ -206,11 +209,10 @@ def save_checkin():
 
 
 def location_photo_url(package):
-    # location_photo_path is a file name inside UPLOAD_FOLDER (static/uploads/);
-    # the upload step that writes it can change this one place if that changes
+    # location_photo_path is a file name inside UPLOAD_FOLDER, served by /photos
     if not package.location_photo_path:
         return None
-    return url_for("static", filename=f"uploads/{package.location_photo_path}")
+    return url_for("photos.photo", filename=package.location_photo_path)
 
 
 @checkin_bp.route("/checkin/photo/<int:package_id>")
@@ -221,7 +223,7 @@ def photo(package_id):
 
     package = db.get_or_404(Package, package_id)
     if package.status == CHECKED_OUT_STATUS:
-        flash("This package has already been picked up.", "warning")
+        flash(PICKED_UP_MESSAGE, "warning")
         return redirect(url_for("checkin.checkin"))
 
     return render_template(
@@ -229,6 +231,67 @@ def photo(package_id):
         package=package,
         photo_url=location_photo_url(package),
     )
+
+
+def photo_error(message, status):
+    return jsonify(error=message), status
+
+
+# Called by checkin_photo.js with fetch; always answers in JSON. CSRF is checked
+# before this runs (the token comes in the X-CSRFToken header).
+@checkin_bp.route("/checkin/photo/<int:package_id>", methods=["POST"])
+@login_required
+def upload_photo(package_id):
+    from app.routes.checkout import CHECKED_IN_STATUS, CHECKED_OUT_STATUS
+
+    package = db.session.get(Package, package_id)
+    if package is None:
+        return photo_error("This package wasn't found.", 404)
+    if package.status == CHECKED_OUT_STATUS:
+        return photo_error(PICKED_UP_MESSAGE, 409)
+
+    uploads = request.files.getlist("photo")
+    if len(uploads) != 1:
+        return photo_error("Send one photo. Take the photo again.", 400)
+
+    # Everything about the upload is untrusted: prepare_photo decodes it
+    # itself and ignores its name and Content-Type
+    try:
+        image = prepare_photo(uploads[0].stream)
+    except PhotoRejected as err:
+        return photo_error(str(err), 400)
+
+    try:
+        filename = store_photo(image)
+    except OSError:
+        current_app.logger.exception("Couldn't write the storage photo for package %s", package.id)
+        return photo_error(PHOTO_SAVE_FAILED, 500)
+
+    old_filename = package.location_photo_path
+    # Only while still checked in, in case it was picked up during the upload
+    try:
+        result = db.session.execute(
+            db.update(Package)
+            .where(Package.id == package.id, Package.status == CHECKED_IN_STATUS)
+            .values(location_photo_path=filename)
+        )
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        delete_photo(filename)
+        current_app.logger.exception("Couldn't record the storage photo for package %s", package.id)
+        return photo_error(PHOTO_SAVE_FAILED, 500)
+
+    if result.rowcount == 0:
+        delete_photo(filename)
+        return photo_error(PICKED_UP_MESSAGE, 409)
+
+    # The new photo is saved and recorded, so the one it replaces can go
+    if old_filename != filename:
+        delete_photo(old_filename)
+
+    flash("Photo saved.", "success")
+    return jsonify(redirect=url_for("checkin.checkin"))
 
 
 # A link rather than a form: it only shows a message, nothing is saved

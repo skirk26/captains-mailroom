@@ -47,8 +47,11 @@ def create_app(test_config=None):
         SQLALCHEMY_DATABASE_URI="sqlite:///"
         + os.path.join(app.instance_path, "captains_mail.db"),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        UPLOAD_FOLDER=os.path.join(app.root_path, "static", "uploads"),
-        MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # cap photo uploads at 16 MB
+        # Storage photos: in instance/ (git-ignored), outside static/, so only
+        # the login-required /photos route can serve them
+        UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
+        # Largest request accepted, photo uploads included; bigger ones get a 413
+        MAX_CONTENT_LENGTH=8 * 1024 * 1024,
         # Cookies: no JavaScript access, and not sent on cross-site POSTs
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
@@ -67,6 +70,7 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     configure_environment(app)
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     db.init_app(app)
     login_manager.init_app(app)
@@ -99,12 +103,14 @@ def create_app(test_config=None):
     from app.routes.auth import bp as auth_bp
     from app.routes.checkin import checkin_bp
     from app.routes.checkout import checkout_bp
+    from app.photos import photos_bp
     from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(checkin_bp)
     app.register_blueprint(checkout_bp)
+    app.register_blueprint(photos_bp)
 
     from app.cli import create_staff
 

@@ -34,6 +34,8 @@
 
   {# checkin_photo.js switches data-state: empty, existing, processing, preview #}
   <section id="photo-capture" class="photo-capture" data-state="{{ 'existing' if photo_url else 'empty' }}"
+           data-upload-url="{{ url_for('checkin.upload_photo', package_id=package.id) }}"
+           data-csrf-token="{{ csrf_token() }}"
            aria-labelledby="photo-instruction">
     <p id="photo-instruction" class="mb-3">
       Photograph where it's stored. Frame the shelf or bin so staff can find it.
@@ -68,8 +70,8 @@
     </div>
 
     <div class="photo-actions-review">
-      {# Saving the photo comes with the upload step; held in memory until then #}
-      <button type="button" id="photo-use" class="btn btn-primary btn-lg" disabled>Use Photo</button>
+      {# Uploads the shrunken photo; becomes "Try Again" if the upload fails #}
+      <button type="button" id="photo-use" class="btn btn-primary btn-lg"><span>Use Photo</span></button>
       <button type="button" class="btn btn-secondary btn-lg photo-take" aria-controls="photo-input">
         {{ icon("arrow-counterclockwise") }}<span>Retake</span>
       </button>

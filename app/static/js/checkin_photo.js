@@ -1,18 +1,21 @@
 // Storage-photo screen: opens the phone camera, shrinks the photo in the
-// browser, and previews it. Phone photos are several MB and the mailroom Wi-Fi
-// may be slow, so only the shrunken JPEG (photoBlob) is ever kept; the upload
-// step will send that.
+// browser, previews it, and uploads it. Phone photos are several MB and the
+// mailroom Wi-Fi may be slow, so only the shrunken JPEG (photoBlob) is sent.
 
 const MAX_SIDE = 1600;     // longest side of the saved photo, in pixels
 const JPEG_QUALITY = 0.82;
+const UPLOAD_TIMEOUT_MS = 30000;
 
 const capture = document.getElementById("photo-capture");
 const input = document.getElementById("photo-input");
 const preview = document.getElementById("photo-preview");
 const errorBox = document.getElementById("photo-error");
 const errorText = document.getElementById("photo-error-text");
+const useButton = document.getElementById("photo-use");
+const useLabel = useButton.querySelector("span");
+const takeButtons = document.querySelectorAll(".photo-take");
 
-let photoBlob = null;  // the shrunken JPEG, held in memory until the upload step
+let photoBlob = null;  // the shrunken JPEG, held in memory until it's uploaded
 let previewUrl = null; // object URL for photoBlob; revoked when the photo is replaced
 
 function setState(state) {
@@ -127,11 +130,12 @@ function showPreview(blob) {
   photoBlob = blob;
   previewUrl = URL.createObjectURL(blob);
   preview.src = previewUrl;
+  useLabel.textContent = "Use Photo"; // a new photo, so not "Try Again"
   setState("preview");
 }
 
 // "Take Photo" and "Retake" both open the camera
-document.querySelectorAll(".photo-take").forEach((button) => {
+takeButtons.forEach((button) => {
   button.addEventListener("click", () => {
     input.value = ""; // so choosing the same file again still fires "change"
     input.click();
@@ -152,6 +156,73 @@ input.addEventListener("change", async () => {
     setState(previousState);
     showError("We couldn't read that photo. Try taking it again, or skip for now.");
   }
+});
+
+// ---- Upload ----
+function setUploading(uploading) {
+  useButton.disabled = uploading;
+  takeButtons.forEach((button) => { button.disabled = uploading; });
+  if (uploading) {
+    useButton.setAttribute("aria-busy", "true"); // components.css shows a spinner
+    useLabel.textContent = "Uploading…";
+  } else {
+    useButton.removeAttribute("aria-busy");
+  }
+}
+
+function uploadFailed(message) {
+  setUploading(false);
+  useLabel.textContent = "Try Again"; // same photo; Retake is still there for a new one
+  showError(message);
+}
+
+async function readJson(response) {
+  const type = response.headers.get("Content-Type") || "";
+  return type.includes("application/json") ? response.json() : null;
+}
+
+async function uploadPhoto() {
+  if (!photoBlob) return;
+  errorBox.hidden = true;
+  setUploading(true);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
+  try {
+    const body = new FormData();
+    body.append("photo", photoBlob, "photo.jpg"); // the server ignores the name
+    const response = await fetch(capture.dataset.uploadUrl, {
+      method: "POST",
+      body,
+      headers: { "X-CSRFToken": capture.dataset.csrfToken, Accept: "application/json" },
+      signal: controller.signal,
+    });
+    const result = await readJson(response);
+
+    if (response.ok && result && result.redirect) {
+      window.location.assign(result.redirect); // buttons stay disabled while leaving
+      return;
+    }
+    if (response.redirected && new URL(response.url).pathname === "/login") {
+      uploadFailed("Your session has expired. Sign in again in a new tab, then tap Try Again.");
+    } else {
+      uploadFailed((result && result.error) || "The photo couldn't be saved. Try again.");
+    }
+  } catch (err) {
+    console.error("Photo upload failed:", err);
+    uploadFailed(err.name === "AbortError"
+      ? "The upload took longer than 30 seconds. Check the Wi-Fi, then try again."
+      : "The photo couldn't be sent. Check the Wi-Fi, then try again.");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+useButton.addEventListener("click", uploadPhoto);
+
+// Coming back with the Back button can restore the page mid-upload
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) setUploading(false);
 });
 
 // Free the photo when leaving for good (not when the page is kept for Back)
