@@ -83,6 +83,13 @@ def store_photo(img):
     return filename
 
 
+def photo_exists(filename):
+    # False for a name this module wouldn't have made, as well as a missing file
+    if not filename or not PHOTO_NAME.fullmatch(filename):
+        return False
+    return os.path.isfile(os.path.join(current_app.config["UPLOAD_FOLDER"], filename))
+
+
 def delete_photo(filename):
     # Only ever removes a file this module named; a missing file is fine
     if not filename or not PHOTO_NAME.fullmatch(filename):

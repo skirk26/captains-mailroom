@@ -43,6 +43,34 @@
           {% call alert("danger", "mb-3") %}{{ error }}{% endcall %}
         {% endfor %}
 
+        {% if state == "checked_in" %}
+          <section class="card storage-card shadow-sm mb-4" aria-labelledby="storage-heading">
+            <div class="card-body">
+              <h2 id="storage-heading" class="headline mb-3">Where it's stored</h2>
+              {% if storage_photo == "photo" %}
+                {# Tapping opens the full-screen viewer at the end of the page (checkout_confirm.js) #}
+                <button type="button" class="storage-photo-button" id="storage-photo-open"
+                        aria-haspopup="dialog" aria-controls="photo-viewer">
+                  <img src="{{ url_for('photos.photo', filename=package.location_photo_path) }}" loading="lazy"
+                       class="storage-photo" alt="Photo of where this package is stored.">
+                  <span class="visually-hidden">View full screen</span>
+                </button>
+                <p class="text-center mt-2 mb-0">
+                  <a href="{{ url_for('checkin.photo', package_id=package.id) }}" class="app-link small">Retake photo</a>
+                </p>
+              {% else %}
+                <div class="storage-placeholder mb-3">
+                  {{ icon("image") }}
+                  <span>{{ "Photo file missing" if storage_photo == "missing" else "No storage photo" }}</span>
+                </div>
+                <a href="{{ url_for('checkin.photo', package_id=package.id) }}" class="btn btn-secondary btn-lg w-100">
+                  {{ icon("camera-fill") }}<span>Add photo</span>
+                </a>
+              {% endif %}
+            </div>
+          </section>
+        {% endif %}
+
         <div class="card package-card shadow-sm mb-4">
           <div class="card-body">
             {% if state == "picked_up" %}
@@ -111,6 +139,15 @@
       {% endif %}
     </main>
   </div>
+
+  {% if storage_photo == "photo" %}
+    {# Full-screen view of the storage photo. A modal <dialog> closes on Escape by itself. #}
+    <dialog id="photo-viewer" class="photo-viewer" aria-label="Storage photo">
+      <button type="button" id="photo-viewer-close" class="btn btn-secondary photo-viewer-close">Close</button>
+      <img src="{{ url_for('photos.photo', filename=package.location_photo_path) }}" loading="lazy"
+           class="photo-viewer-image" alt="Photo of where this package is stored.">
+    </dialog>
+  {% endif %}
 
   <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
   {% if state == "checked_in" %}

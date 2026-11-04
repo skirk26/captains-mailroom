@@ -305,3 +305,82 @@
 [data-state="existing"] #photo-use {
   display: none;
 }
+
+/* Check-out page: where the package is stored */
+.storage-photo-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--color-viewfinder);
+  cursor: zoom-in;
+}
+
+.storage-photo {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 50vh;
+  max-height: 50dvh;
+  object-fit: contain;
+}
+
+.storage-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-neutral-bg);
+  color: var(--color-neutral);
+}
+
+.storage-placeholder .icon {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* Full-screen photo viewer (a modal <dialog>) */
+.photo-viewer {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: calc(env(safe-area-inset-top) + var(--space-3)) calc(env(safe-area-inset-right) + var(--space-3))
+    calc(env(safe-area-inset-bottom) + var(--space-3)) calc(env(safe-area-inset-left) + var(--space-3));
+  border: 0;
+  background-color: var(--color-viewfinder);
+}
+
+.photo-viewer[open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.photo-viewer::backdrop {
+  background-color: var(--color-viewfinder);
+}
+
+.photo-viewer-close {
+  justify-self: end;
+  min-width: var(--touch-target);
+  min-height: var(--touch-target);
+}
+
+.photo-viewer-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The page behind doesn't scroll while the viewer is open */
+body:has(.photo-viewer[open]) {
+  overflow: hidden;
+}

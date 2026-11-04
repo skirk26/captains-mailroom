@@ -1,10 +1,11 @@
 # Package check-out routes (scan label, look up package, mark picked up).
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
 from app.models import Package, utc_now
+from app.photos import photo_exists
 from app.routes.checkin import CARRIER_PATTERNS, normalize_tracking
 
 checkout_bp = Blueprint("checkout", __name__)
@@ -26,6 +27,19 @@ def find_package(tracking):
     return db.session.scalar(db.select(Package).filter_by(tracking_number=tracking))
 
 
+def storage_photo_state(package):
+    # "photo", "none", or "missing" (the database names a file that isn't on disk)
+    filename = package.location_photo_path
+    if not filename:
+        return "none"
+    if not photo_exists(filename):
+        current_app.logger.warning(
+            "Storage photo %r for package %s is missing from the upload folder", filename, package.id
+        )
+        return "missing"
+    return "photo"
+
+
 def render_confirm(package, tracking, errors=(), student_id=""):
     if package is None:
         state = "not_found"
@@ -43,6 +57,8 @@ def render_confirm(package, tracking, errors=(), student_id=""):
         student_id=student_id,
         # Passed on to check-in if the package isn't found, so its chip stays right
         source=request.args.get("source", ""),
+        # Only while it's on the shelf; once picked up the spot no longer matters
+        storage_photo=storage_photo_state(package) if state == "checked_in" else None,
     )
 
 

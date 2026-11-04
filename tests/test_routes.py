@@ -640,15 +640,18 @@ def test_photo_page_skip_link(client):
     assert "Checked in without a photo." in client.get("/checkin").get_data(as_text=True)
 
 
-def test_photo_page_shows_existing_photo(client):
+def test_photo_page_shows_existing_photo(app, client, tmp_path):
+    app.config["UPLOAD_FOLDER"] = str(tmp_path)
+    filename = "0123456789abcdef0123456789abcdef.jpg"
+    (tmp_path / filename).write_bytes(b"photo")  # the page only checks the file exists
     post_checkin(client, box_number="1815")
     package = all_packages()[0]
-    package.location_photo_path = "shelf-a.jpg"  # set directly, without an upload
+    package.location_photo_path = filename  # set directly, without an upload
     db.session.commit()
 
     html = photo_page(client, package).get_data(as_text=True)
     assert 'data-state="existing"' in html
-    assert 'src="/photos/shelf-a.jpg"' in html
+    assert f'src="/photos/{filename}"' in html
 
 
 def test_photo_page_unknown_package_is_404(client):

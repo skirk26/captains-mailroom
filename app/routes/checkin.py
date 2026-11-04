@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
 from app.models import Package, Recipient
-from app.photos import PhotoRejected, delete_photo, prepare_photo, store_photo
+from app.photos import PhotoRejected, delete_photo, photo_exists, prepare_photo, store_photo
 
 checkin_bp = Blueprint("checkin", __name__)
 
@@ -209,8 +209,9 @@ def save_checkin():
 
 
 def location_photo_url(package):
-    # location_photo_path is a file name inside UPLOAD_FOLDER, served by /photos
-    if not package.location_photo_path:
+    # location_photo_path is a file name inside UPLOAD_FOLDER, served by /photos.
+    # A file missing from disk shows the empty state rather than a broken image.
+    if not photo_exists(package.location_photo_path):
         return None
     return url_for("photos.photo", filename=package.location_photo_path)
 

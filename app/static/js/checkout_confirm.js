@@ -1,5 +1,6 @@
-// Confirm Pickup page: stop a double tap on Mark as Picked Up from sending the form twice.
-// (The server only checks a package out once anyway; this avoids a second request.)
+// Confirm Pickup page: stop a double tap on Mark as Picked Up from sending the form twice
+// (the server only checks a package out once anyway; this avoids a second request),
+// and show the storage photo full screen when it's tapped.
 
 const pickupForm = document.getElementById("pickup-form");
 const pickupButton = document.getElementById("pickup-button");
@@ -19,3 +20,14 @@ window.addEventListener("pageshow", (event) => {
     pickupButton.textContent = pickupLabel;
   }
 });
+
+// Storage photo viewer: only on the page when the package has a photo
+const photoViewer = document.getElementById("photo-viewer");
+if (photoViewer) {
+  document.getElementById("storage-photo-open").addEventListener("click", () => photoViewer.showModal());
+  document.getElementById("photo-viewer-close").addEventListener("click", () => photoViewer.close());
+  // A tap on the black area around the photo closes it too; <dialog> handles Escape
+  photoViewer.addEventListener("click", (event) => {
+    if (event.target === photoViewer) photoViewer.close();
+  });
+}
