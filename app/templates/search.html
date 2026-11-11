@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_macros.html" import nav_back, status_chip %}
+
+{% block title %}Search{% endblock %}
+{% block nav_leading %}{{ nav_back(url_for("dashboard.dashboard"), "Packages") }}{% endblock %}
+{% block nav_title %}Search{% endblock %}
+
+{# Links that keep the search text and filter; "all" and page 1 are left out of the URL #}
+{% macro search_url(filter=None, page=1) -%}
+  {%- set filter = filter or status -%}
+  {{ url_for("search.search", q=q or None, status=filter if filter != "all" else None,
+             page=page if page > 1 else None) }}
+{%- endmacro %}
+
+{% block content %}
+  <h2 class="large-title mb-3">Search</h2>
+
+  <form method="get" action="{{ url_for('search.search') }}" class="search-form mb-3" role="search">
+    <label for="search-q" class="form-label">Tracking number, name, or box number</label>
+    <div class="search-field-row">
+      <input type="search" id="search-q" name="q" value="{{ q }}" class="form-control form-control-lg"
+             maxlength="100" enterkeyhint="search" autocomplete="off" autocapitalize="off"
+             autocorrect="off" spellcheck="false" {% if not q %}autofocus{% endif %}>
+      <button type="submit" class="btn btn-primary btn-lg search-submit">
+        {{ icon("search") }}<span>Search</span>
+      </button>
+    </div>
+    {% if status != "all" %}
+      <input type="hidden" name="status" value="{{ status }}">
+    {% endif %}
+    {% if q %}
+      <p class="mt-2 mb-0">
+        <a href="{{ url_for('search.search', status=status if status != 'all' else None) }}" class="app-link">Clear search</a>
+      </p>
+    {% endif %}
+  </form>
+
+  <nav class="segmented-control mb-3" aria-label="Filter by status">
+    {% for value, label in [("all", "All"), ("waiting", "Waiting for pickup"), ("picked_up", "Picked up")] %}
+      <a href="{{ search_url(filter=value) }}" class="segmented-control-item"
+         {% if value == status %}aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+
+  <div aria-live="polite">
+    {% if packages %}
+      <p class="footnote text-secondary-label mb-2 px-1">
+        Showing {{ first_shown }}–{{ last_shown }} of {{ total }}.
+      </p>
+    {% elif not any_packages %}
+      <div class="search-empty">
+        {{ icon("box-arrow-in-down") }}
+        <p class="headline mb-1">No packages yet</p>
+        <p class="text-secondary-label mb-0">Packages appear here once they're checked in.</p>
+      </div>
+    {% else %}
+      <div class="search-empty">
+        {{ icon("search") }}
+        <p class="headline mb-1">No packages found</p>
+        <p class="text-secondary-label mb-0">
+          {% if q %}
+            Try the last few digits of the tracking number, a last name, or a box number.
+          {% else %}
+            No packages have this status.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if packages %}
+    <ul class="inset-list search-results mb-3">
+      {% for package in packages %}
+        {% set recipient = package.recipient %}
+        <li class="inset-row search-result">
+          <div class="search-result-main">
+            <span class="mono" title="{{ package.tracking_number }}">…{{ package.tracking_number[-8:] }}</span>
+            <span class="subheadline text-secondary-label">
+              {{ recipient.full_name if recipient and recipient.full_name else "No name" }}
+              {%- if recipient and recipient.mailbox_number %} · Box {{ recipient.mailbox_number }}{% endif %}
+            </span>
+          </div>
+          {% if package.status == "checked_out" %}
+            {% call status_chip("neutral", "bag-check-fill") %}Picked up{% endcall %}
+          {% else %}
+            {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if page_count > 1 %}
+      <nav class="search-pages" aria-label="Result pages">
+        {% if page > 1 %}
+          <a href="{{ search_url(page=page - 1) }}" class="btn btn-secondary">{{ icon("chevron-left") }}<span>Previous</span></a>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <span class="footnote text-secondary-label">Page {{ page }} of {{ page_count }}</span>
+        {% if page < page_count %}
+          <a href="{{ search_url(page=page + 1) }}" class="btn btn-secondary"><span>Next</span>{{ icon("chevron-right") }}</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% endif %}
+{% endblock %}

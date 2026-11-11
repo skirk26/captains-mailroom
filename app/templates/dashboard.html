@@ -29,7 +29,12 @@
         <span class="inset-row-title">Check Out Package</span>
         {{ icon("chevron-right", "inset-row-chevron") }}
       </a>
+      <a href="{{ url_for('search.search') }}" class="inset-row">
+        <span class="inset-row-icon">{{ icon("search") }}</span>
+        <span class="inset-row-title">Search Packages</span>
+        {{ icon("chevron-right", "inset-row-chevron") }}
+      </a>
     </nav>
-    <p class="inset-footer">Scan a shipping label to check a package in or hand it to a student.</p>
+    <p class="inset-footer">Scan a shipping label to check a package in or hand it to a student, or search by tracking number, name, or box.</p>
   </div>
 {% endblock %}

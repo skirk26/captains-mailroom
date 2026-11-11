@@ -105,12 +105,14 @@ def create_app(test_config=None):
     from app.routes.checkout import checkout_bp
     from app.photos import photos_bp
     from app.routes.dashboard import dashboard_bp
+    from app.routes.search import search_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(checkin_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(photos_bp)
+    app.register_blueprint(search_bp)
 
     from app.cli import create_staff
 

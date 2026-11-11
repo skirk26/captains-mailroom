@@ -175,6 +175,19 @@ the value or field on the right, with hairlines between rows:
 A row can also be a link, with an icon, title, and chevron, as on the
 dashboard.
 
+### Segmented control
+
+A row of two to four filter choices, built as links so each choice has its own
+URL. The current one has `aria-current="page"`. Each segment is at least 44px
+tall:
+
+```html
+<nav class="segmented-control" aria-label="Filter by status">
+  <a href="?status=all" class="segmented-control-item" aria-current="page">All</a>
+  <a href="?status=waiting" class="segmented-control-item">Waiting for pickup</a>
+</nav>
+```
+
 ### Status chips and alerts
 
 Both come from `_macros.html`, so the icon is never left out:
@@ -200,6 +213,7 @@ Apple's SF Symbols aren't used.
 | Page | Layout |
 |---|---|
 | Sign in, dashboard, error pages | Extend `base.html` and use the components above |
+| Search | Extends `base.html`: a search field, a segmented status filter, and an inset list of results |
 | Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |
 | Scan pages (check in, check out) | Their own layout for now, with the new colors, icons, and nav bar look |
 | Confirm pages (check in, pickup) | Their own layout for now, with the new colors, icons, chips, and alerts |
