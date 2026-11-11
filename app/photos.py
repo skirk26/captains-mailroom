@@ -1,5 +1,6 @@
 # Storage-location photos: checks and re-encodes uploads, stores them in
-# instance/uploads/ (not publicly served), and serves them to signed-in staff.
+# instance/uploads/ (not publicly served), and serves them and their thumbnails
+# (instance/uploads/thumbs/) to signed-in staff.
 import contextlib
 import os
 import re
@@ -18,6 +19,8 @@ ALLOWED_FORMATS = ("JPEG", "PNG", "WEBP")
 MAX_PIXELS = 50_000_000
 MAX_SIDE = 1600  # same as checkin_photo.js
 JPEG_QUALITY = 82
+THUMB_SIZE = (240, 240)  # fits a 64px square at up to 3x screen density
+THUMB_QUALITY = 75
 # Every stored photo is named <32 hex characters>.jpg; nothing else is served or deleted
 PHOTO_NAME = re.compile(r"[0-9a-f]{32}\.jpg")
 
@@ -65,21 +68,24 @@ def flatten_to_rgb(img):
     return img.convert("RGB")
 
 
-def store_photo(img):
-    """Save img as a new JPEG in UPLOAD_FOLDER and return its file name."""
-    folder = current_app.config["UPLOAD_FOLDER"]
-    filename = f"{uuid.uuid4().hex}.jpg"
+def save_jpeg(img, folder, filename, quality):
     # Written to a temp file beside it and renamed, so a failed save never
-    # leaves a partial photo under a real name
+    # leaves a partial image under a real name
     fd, temp_path = tempfile.mkstemp(dir=folder, suffix=".tmp")
     try:
         with os.fdopen(fd, "wb") as out:
-            img.save(out, "JPEG", quality=JPEG_QUALITY, optimize=True)
+            img.save(out, "JPEG", quality=quality, optimize=True)
         os.replace(temp_path, os.path.join(folder, filename))
     except BaseException:
         with contextlib.suppress(OSError):
             os.remove(temp_path)
         raise
+
+
+def store_photo(img):
+    """Save img as a new JPEG in UPLOAD_FOLDER and return its file name."""
+    filename = f"{uuid.uuid4().hex}.jpg"
+    save_jpeg(img, current_app.config["UPLOAD_FOLDER"], filename, JPEG_QUALITY)
     return filename
 
 
@@ -91,15 +97,25 @@ def photo_exists(filename):
 
 
 def delete_photo(filename):
-    # Only ever removes a file this module named; a missing file is fine
+    # Only ever removes a file this module named, and its thumbnail; a missing
+    # file is fine
     if not filename or not PHOTO_NAME.fullmatch(filename):
         return
-    try:
-        os.remove(os.path.join(current_app.config["UPLOAD_FOLDER"], filename))
-    except FileNotFoundError:
-        pass
-    except OSError:
-        current_app.logger.warning("Couldn't delete old storage photo %s", filename, exc_info=True)
+    for folder in (current_app.config["UPLOAD_FOLDER"], current_app.config["THUMB_FOLDER"]):
+        try:
+            os.remove(os.path.join(folder, filename))
+        except FileNotFoundError:
+            pass
+        except OSError:
+            current_app.logger.warning("Couldn't delete old storage photo %s", filename, exc_info=True)
+
+
+def make_thumbnail(filename):
+    with Image.open(os.path.join(current_app.config["UPLOAD_FOLDER"], filename), formats=["JPEG"]) as img:
+        img.draft("RGB", (THUMB_SIZE[0] * 2, THUMB_SIZE[1] * 2))  # decode at a smaller scale: faster
+        img.thumbnail(THUMB_SIZE, Image.Resampling.LANCZOS)
+        img.info = {}
+        save_jpeg(img.convert("RGB"), current_app.config["THUMB_FOLDER"], filename, THUMB_QUALITY)
 
 
 @photos_bp.route("/photos/<filename>")
@@ -110,6 +126,26 @@ def photo(filename):
         abort(404)
     # 404 if the file doesn't exist
     response = send_from_directory(current_app.config["UPLOAD_FOLDER"], filename, mimetype="image/jpeg")
+    response.headers["Content-Disposition"] = "inline"
+    response.headers["Cache-Control"] = "private"
+    return response
+
+
+@photos_bp.route("/photos/thumb/<filename>")
+@login_required
+def thumbnail(filename):
+    # Same strict name check as photo(); 404 if the original is gone, even when
+    # an old thumbnail is still on disk
+    if not photo_exists(filename):
+        abort(404)
+    if not os.path.isfile(os.path.join(current_app.config["THUMB_FOLDER"], filename)):
+        # Made on the first request, then reused
+        try:
+            make_thumbnail(filename)
+        except (OSError, SyntaxError, ValueError):
+            current_app.logger.warning("Couldn't make a thumbnail of %s", filename, exc_info=True)
+            abort(404)
+    response = send_from_directory(current_app.config["THUMB_FOLDER"], filename, mimetype="image/jpeg")
     response.headers["Content-Disposition"] = "inline"
     response.headers["Cache-Control"] = "private"
     return response

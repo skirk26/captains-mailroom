@@ -70,7 +70,9 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     configure_environment(app)
-    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    # Thumbnails sit beside the photos, so they're private and git-ignored too
+    app.config.setdefault("THUMB_FOLDER", os.path.join(app.config["UPLOAD_FOLDER"], "thumbs"))
+    os.makedirs(app.config["THUMB_FOLDER"], exist_ok=True)  # also makes UPLOAD_FOLDER
 
     db.init_app(app)
     login_manager.init_app(app)

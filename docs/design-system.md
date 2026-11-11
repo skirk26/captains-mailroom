@@ -19,6 +19,7 @@ Apple's branding, icons, or fonts.
 | `app/static/css/style.css` | Page-specific layout: the scanner viewfinder, recipient suggestions, and package details. |
 | `app/templates/base.html` | The base layout: viewport, safe areas, nav bar, flash messages, and content. |
 | `app/templates/_macros.html` | Jinja macros for alerts, flash messages, status chips, and the back button. |
+| `app/templates/_package.html` | Macros shared by the pages that show one package: local times, the "Where it's stored" card, and the full-screen photo viewer (with `js/photo_viewer.js`). |
 | `app/icons.py` | The `icon("name")` template helper, which inlines an SVG icon. |
 
 Load the stylesheets in this order: Bootstrap, then `tokens.css`, then
@@ -213,7 +214,8 @@ Apple's SF Symbols aren't used.
 | Page | Layout |
 |---|---|
 | Sign in, dashboard, error pages | Extend `base.html` and use the components above |
-| Search | Extends `base.html`: a search field, a segmented status filter, and an inset list of results |
+| Search | Extends `base.html`: a search field, a segmented status filter, and result rows that link to the package (64px thumbnail, details, status chip) |
+| Package detail | Extends `base.html`: the storage card and photo viewer from `_package.html`, a status chip, and inset detail rows |
 | Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |
 | Scan pages (check in, check out) | Their own layout for now, with the new colors, icons, and nav bar look |
 | Confirm pages (check in, pickup) | Their own layout for now, with the new colors, icons, chips, and alerts |

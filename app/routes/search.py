@@ -1,17 +1,19 @@
 # Package search: one box that finds packages by tracking number, recipient
-# name, or box number, with a status filter. Student IDs are never searched or shown.
+# name, or box number, with a status filter; and each package's detail page.
+# Student IDs are never searched or shown.
 import math
 import re
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, url_for
 from flask_login import login_required
 from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import contains_eager
 
 from app import db, limiter
 from app.models import Package, Recipient
+from app.photos import photo_exists
 from app.routes.checkin import normalize_tracking
-from app.routes.checkout import CHECKED_IN_STATUS, CHECKED_OUT_STATUS
+from app.routes.checkout import CHECKED_IN_STATUS, CHECKED_OUT_STATUS, storage_photo_state
 
 search_bp = Blueprint("search", __name__)
 
@@ -83,14 +85,28 @@ def page_number(raw):
     return max(page, 1)
 
 
+def search_params(args):
+    """(q, status, page) from a query string; anything invalid becomes the default."""
+    status = args.get("status", DEFAULT_STATUS)
+    if status not in STATUS_FILTERS:
+        status = DEFAULT_STATUS
+    return clean_query(args.get("q", "")), status, page_number(args.get("page"))
+
+
+def search_link_args(q, status, page):
+    # Leaves defaults out of the URL: /search rather than /search?status=all&page=1
+    return {
+        "q": q or None,
+        "status": status if status != DEFAULT_STATUS else None,
+        "page": page if page > 1 else None,
+    }
+
+
 @search_bp.route("/search")
 @limiter.limit(SEARCH_RATE_LIMIT)
 @login_required
 def search():
-    q = clean_query(request.args.get("q", ""))
-    status = request.args.get("status", DEFAULT_STATUS)
-    if status not in STATUS_FILTERS:
-        status = DEFAULT_STATUS
+    q, status, page = search_params(request.args)
 
     conditions = []
     match = search_condition(q)
@@ -104,7 +120,7 @@ def search():
         db.select(func.count(Package.id)).outerjoin(Package.recipient).where(*conditions)
     )
     page_count = max(1, math.ceil(total / PER_PAGE))
-    page = min(page_number(request.args.get("page")), page_count)
+    page = min(page, page_count)
 
     packages = db.session.scalars(
         db.select(Package)
@@ -125,10 +141,30 @@ def search():
         q=q,
         status=status,
         packages=packages,
+        # Rows whose photo file is really there; the rest show the placeholder
+        with_photo={package.id for package in packages if photo_exists(package.location_photo_path)},
         total=total,
         page=page,
         page_count=page_count,
         first_shown=(page - 1) * PER_PAGE + 1,
         last_shown=(page - 1) * PER_PAGE + len(packages),
         any_packages=any_packages,
+        # Each row's link carries the search, so the detail page can come back to it
+        detail_args=search_link_args(q, status, page),
+    )
+
+
+@search_bp.route("/packages/<int:package_id>")
+@login_required
+def package_detail(package_id):
+    package = db.get_or_404(Package, package_id)
+    # The back button returns to the same search. Only q, status and page are
+    # accepted, cleaned like the search page does, and the link is built here.
+    q, status, page = search_params(request.args)
+    return render_template(
+        "package_detail.html",
+        package=package,
+        waiting=package.status == CHECKED_IN_STATUS,
+        storage_photo=storage_photo_state(package),
+        back_url=url_for("search.search", **search_link_args(q, status, page)),
     )

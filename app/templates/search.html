@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import nav_back, status_chip %}
+{% from "_package.html" import local_time %}
 
 {% block title %}Search{% endblock %}
 {% block nav_leading %}{{ nav_back(url_for("dashboard.dashboard"), "Packages") }}{% endblock %}
@@ -69,25 +70,51 @@
   </div>
 
   {% if packages %}
-    <ul class="inset-list search-results mb-3">
+    <div class="inset-list search-results mb-3">
       {% for package in packages %}
         {% set recipient = package.recipient %}
-        <li class="inset-row search-result">
-          <div class="search-result-main">
-            <span class="mono" title="{{ package.tracking_number }}">…{{ package.tracking_number[-8:] }}</span>
-            <span class="subheadline text-secondary-label">
-              {{ recipient.full_name if recipient and recipient.full_name else "No name" }}
-              {%- if recipient and recipient.mailbox_number %} · Box {{ recipient.mailbox_number }}{% endif %}
-            </span>
-          </div>
-          {% if package.status == "checked_out" %}
-            {% call status_chip("neutral", "bag-check-fill") %}Picked up{% endcall %}
+        {% set name = recipient.full_name if recipient else "" %}
+        {% set box = recipient.mailbox_number if recipient else None %}
+        {# The whole row is one link to the package's detail page #}
+        <a href="{{ url_for('search.package_detail', package_id=package.id, **detail_args) }}" class="inset-row search-result">
+          {% if package.id in with_photo %}
+            {# Empty alt: the text beside it says which package this is #}
+            <img src="{{ url_for('photos.thumbnail', filename=package.location_photo_path) }}" alt=""
+                 loading="lazy" width="64" height="64" class="search-thumb">
           {% else %}
-            {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+            <span class="search-thumb search-thumb-empty">{{ icon("camera-fill") }}</span>
           {% endif %}
-        </li>
+
+          <span class="search-result-main">
+            <span class="search-result-title">
+              <span class="mono">…{{ package.tracking_number[-8:] }}</span>
+              <span class="footnote text-secondary-label">{{ package.carrier }}</span>
+              {% if package.notes %}
+                <span class="search-note">{{ icon("sticky-fill") }}<span class="visually-hidden">Has notes</span></span>
+              {% endif %}
+            </span>
+            <span class="subheadline">
+              {%- if name and box %}{{ name }} · Box {{ box }}
+              {%- elif name %}{{ name }}
+              {%- elif box %}Box {{ box }}
+              {%- else %}No name or box{% endif -%}
+            </span>
+            <span class="search-result-status">
+              {% if package.status == "checked_out" %}
+                {% call status_chip("neutral", "bag-check-fill") %}Picked up{% endcall %}
+              {% else %}
+                {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+              {% endif %}
+            </span>
+            <span class="footnote text-secondary-label">Checked in {{ local_time(package.checked_in_at) }}</span>
+            {% if package.status == "checked_out" and package.checked_out_at %}
+              <span class="footnote text-secondary-label">Picked up {{ local_time(package.checked_out_at) }}</span>
+            {% endif %}
+          </span>
+          {{ icon("chevron-right", "inset-row-chevron") }}
+        </a>
       {% endfor %}
-    </ul>
+    </div>
 
     {% if page_count > 1 %}
       <nav class="search-pages" aria-label="Result pages">
@@ -105,4 +132,8 @@
       </nav>
     {% endif %}
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
 {% endblock %}

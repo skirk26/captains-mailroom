@@ -74,7 +74,8 @@ def upload(client, package_id, data, filename="photo.jpg", headers=JSON):
 
 
 def stored_files(uploads):
-    return sorted(path.name for path in uploads.iterdir())
+    # Files only: the app also keeps a thumbs/ folder in here
+    return sorted(path.name for path in uploads.iterdir() if path.is_file())
 
 
 def refreshed(package):

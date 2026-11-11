@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% from "_macros.html" import nav_back, status_chip %}
+{% from "_package.html" import local_time, storage_card, photo_viewer %}
+
+{% block title %}Package{% endblock %}
+{# back_url is built on the server from the search's q, status and page #}
+{% block nav_leading %}{{ nav_back(back_url, "Search") }}{% endblock %}
+{% block nav_title %}Package{% endblock %}
+
+{% block content %}
+  {# A picked-up package's photo is still shown, but there's nothing to add or retake #}
+  {{ storage_card(package, storage_photo, retake_link=False, can_add=waiting) }}
+
+  <div class="mb-3">
+    {% if waiting %}
+      {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+    {% else %}
+      {% call status_chip("neutral", "bag-check-fill") %}Picked up{% endcall %}
+    {% endif %}
+  </div>
+
+  {% set recipient = package.recipient %}
+  <div class="inset-section">
+    <dl class="inset-list package-detail-list">
+      <div class="inset-row">
+        <dt class="inset-label">Tracking</dt>
+        <dd class="inset-value mono">{{ package.tracking_number }}</dd>
+      </div>
+      <div class="inset-row">
+        <dt class="inset-label">Carrier</dt>
+        <dd class="inset-value">{{ package.carrier }}</dd>
+      </div>
+      <div class="inset-row">
+        <dt class="inset-label">Recipient</dt>
+        <dd class="inset-value">{{ recipient.full_name if recipient and recipient.full_name else "Not provided" }}</dd>
+      </div>
+      <div class="inset-row">
+        <dt class="inset-label">Box number</dt>
+        <dd class="inset-value">{{ recipient.mailbox_number if recipient and recipient.mailbox_number else "Not provided" }}</dd>
+      </div>
+      <div class="inset-row inset-row-notes">
+        <dt class="inset-label">Notes</dt>
+        <dd class="inset-value">{{ package.notes or "None" }}</dd>
+      </div>
+      <div class="inset-row">
+        <dt class="inset-label">Checked in</dt>
+        <dd class="inset-value">
+          {{ local_time(package.checked_in_at) }}
+          {%- if package.checked_in_staff %}<br>by {{ package.checked_in_staff.username }}{% endif %}
+        </dd>
+      </div>
+      {% if not waiting %}
+        <div class="inset-row">
+          <dt class="inset-label">Picked up</dt>
+          <dd class="inset-value">
+            {% if package.checked_out_at %}{{ local_time(package.checked_out_at) }}{% else %}Time not recorded{% endif %}
+            {%- if package.checked_out_staff %}<br>by {{ package.checked_out_staff.username }}{% endif %}
+          </dd>
+        </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  {% if waiting %}
+    <div class="d-grid gap-2">
+      <a href="{{ url_for('checkout.confirm', tracking=package.tracking_number) }}" class="btn btn-primary btn-lg">
+        {{ icon("box-arrow-up") }}<span>Go to Check Out</span>
+      </a>
+      {# With no photo, the card above already offers "Add photo" #}
+      {% if storage_photo == "photo" %}
+        <a href="{{ url_for('checkin.photo', package_id=package.id) }}" class="btn btn-secondary btn-lg">
+          {{ icon("arrow-counterclockwise") }}<span>Retake photo</span>
+        </a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if storage_photo == "photo" %}
+    {{ photo_viewer(package) }}
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
+  {% if storage_photo == "photo" %}
+    <script src="{{ url_for('static', filename='js/photo_viewer.js') }}"></script>
+  {% endif %}
+{% endblock %}
