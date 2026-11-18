@@ -1,10 +1,9 @@
 {% extends "base.html" %}
-{% from "_macros.html" import nav_back, status_chip %}
+{% from "_macros.html" import status_chip %}
 {% from "_package.html" import local_time %}
+{% set tab = "find" %}
 
 {% block title %}Search{% endblock %}
-{% block nav_leading %}{{ nav_back(url_for("dashboard.dashboard"), "Packages") }}{% endblock %}
-{% block nav_title %}Search{% endblock %}
 
 {# Links that keep the search text and filter; "all" and page 1 are left out of the URL #}
 {% macro search_url(filter=None, page=1) -%}
@@ -52,19 +51,25 @@
       <div class="search-empty">
         {{ icon("box-arrow-in-down") }}
         <p class="headline mb-1">No packages yet</p>
-        <p class="text-secondary-label mb-0">Packages appear here once they're checked in.</p>
+        <p class="text-secondary-label mb-3">Packages appear here once they're checked in.</p>
+        <a href="{{ url_for('checkin.checkin') }}" class="btn btn-primary">{{ icon("box-arrow-in-down") }}<span>Check in a package</span></a>
       </div>
     {% else %}
       <div class="search-empty">
         {{ icon("search") }}
         <p class="headline mb-1">No packages found</p>
-        <p class="text-secondary-label mb-0">
+        <p class="text-secondary-label mb-3">
           {% if q %}
             Try the last few digits of the tracking number, a last name, or a box number.
           {% else %}
             No packages have this status.
           {% endif %}
         </p>
+        {% if q %}
+          <a href="{{ url_for('search.search', status=status if status != 'all' else None) }}" class="btn btn-secondary">Clear search</a>
+        {% else %}
+          <a href="{{ url_for('search.search') }}" class="btn btn-secondary">Show all packages</a>
+        {% endif %}
       </div>
     {% endif %}
   </div>

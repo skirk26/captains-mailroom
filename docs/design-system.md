@@ -138,6 +138,22 @@ on the right:
 The bar is sticky and translucent, and it pads itself below the notch with
 `env(safe-area-inset-top)`.
 
+### Tab bar
+
+The main sections, fixed to the bottom of the screen where a thumb can reach
+them: Home, Check In, Check Out, Find, and Account. A page shows it by setting
+`tab` at the top of its template; the current tab gets `aria-current="page"`,
+the brand color, and a tinted pill behind its icon. Each tab is 56px tall, and
+the bar pads itself above the home indicator.
+
+```jinja
+{% extends "base.html" %}
+{% set tab = "find" %}
+```
+
+Scan, confirm, and photo screens leave `tab` unset. They're focused flows with
+their own bottom actions, and two bottom bars would collide.
+
 ### Buttons
 
 | Class | Use |
@@ -213,9 +229,11 @@ Apple's SF Symbols aren't used.
 
 | Page | Layout |
 |---|---|
-| Sign in, dashboard, error pages | Extend `base.html` and use the components above |
-| Search | Extends `base.html`: a search field, a segmented status filter, and result rows that link to the package (64px thumbnail, details, status chip) |
-| Package detail | Extends `base.html`: the storage card and photo viewer from `_package.html`, a status chip, and inset detail rows |
+| Sign in, error pages | Extend `base.html` and use the components above (no tab bar) |
+| Home (`/dashboard`) | Extends `base.html` with the tab bar: search field, Check In / Check Out tiles, Today counts, and recent activity |
+| Account | Extends `base.html` with the tab bar: the staff member's name and Sign out |
+| Search (Find tab) | Extends `base.html` with the tab bar: a search field, a segmented status filter, and result rows that link to the package (64px thumbnail, details, status chip) |
+| Package detail | Extends `base.html` with the tab bar (Find stays current): the storage card and photo viewer from `_package.html`, a status chip, and inset detail rows |
 | Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |
 | Scan pages (check in, check out) | Their own layout for now, with the new colors, icons, and nav bar look |
 | Confirm pages (check in, pickup) | Their own layout for now, with the new colors, icons, chips, and alerts |

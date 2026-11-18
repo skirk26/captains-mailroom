@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+{% from "_macros.html" import status_chip %}
+{% set tab = "home" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Home{% endblock %}
 
 {% block nav_title %}Captain's Mail{% endblock %}
 {% block nav_trailing %}
@@ -13,28 +15,82 @@
 
 {% block content %}
   <div class="page-heading">
-    <h2 class="large-title mb-1">Packages</h2>
+    <h2 class="large-title mb-1">Mailroom</h2>
     <p class="subheadline text-secondary-label mb-0">Signed in as {{ current_user.username }}</p>
   </div>
 
-  <div class="inset-section">
-    <nav class="inset-list" aria-label="Package actions">
-      <a href="{{ url_for('checkin.checkin') }}" class="inset-row">
-        <span class="inset-row-icon">{{ icon("box-arrow-in-down") }}</span>
-        <span class="inset-row-title">Check In Package</span>
-        {{ icon("chevron-right", "inset-row-chevron") }}
-      </a>
-      <a href="{{ url_for('checkout.checkout') }}" class="inset-row">
-        <span class="inset-row-icon">{{ icon("box-arrow-up") }}</span>
-        <span class="inset-row-title">Check Out Package</span>
-        {{ icon("chevron-right", "inset-row-chevron") }}
-      </a>
-      <a href="{{ url_for('search.search') }}" class="inset-row">
-        <span class="inset-row-icon">{{ icon("search") }}</span>
-        <span class="inset-row-title">Search Packages</span>
-        {{ icon("chevron-right", "inset-row-chevron") }}
-      </a>
-    </nav>
-    <p class="inset-footer">Scan a shipping label to check a package in or hand it to a student, or search by tracking number, name, or box.</p>
-  </div>
+  <form method="get" action="{{ url_for('search.search') }}" class="home-search mb-4" role="search">
+    <label for="home-search-q" class="visually-hidden">Find a package by tracking number, name, or box number</label>
+    <input type="search" id="home-search-q" name="q" class="form-control form-control-lg"
+           placeholder="Tracking, name, or box" maxlength="100" enterkeyhint="search"
+           autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button type="submit" class="btn btn-primary btn-lg home-search-submit" aria-label="Search">{{ icon("search") }}</button>
+  </form>
+
+  <nav class="home-tiles mb-4" aria-label="Package actions">
+    <a href="{{ url_for('checkin.checkin') }}" class="home-tile">
+      {{ icon("box-arrow-in-down") }}<span>Check In</span>
+    </a>
+    <a href="{{ url_for('checkout.checkout') }}" class="home-tile">
+      {{ icon("box-arrow-up") }}<span>Check Out</span>
+    </a>
+  </nav>
+
+  <section class="inset-section" aria-labelledby="today-heading">
+    <h3 id="today-heading" class="inset-header">Today</h3>
+    <dl class="today-card">
+      <div class="today-stat">
+        <dt>Checked in</dt>
+        <dd>{{ today.checked_in }}</dd>
+      </div>
+      <div class="today-stat">
+        <dt>Picked up</dt>
+        <dd>{{ today.picked_up }}</dd>
+      </div>
+      <div class="today-stat">
+        <dt>Waiting</dt>
+        <dd>{{ today.waiting }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="inset-section" aria-labelledby="activity-heading">
+    <h3 id="activity-heading" class="inset-header">Recent activity</h3>
+    {% if events %}
+      <div class="inset-list">
+        {% for event in events %}
+          {% set package = event.package %}
+          {% set recipient = package.recipient %}
+          {% set who = recipient.full_name if recipient and recipient.full_name
+                       else ("Box " ~ recipient.mailbox_number if recipient and recipient.mailbox_number else "") %}
+          <a href="{{ url_for('search.package_detail', package_id=package.id) }}" class="inset-row activity-row">
+            <span class="activity-main">
+              <span>
+                <span class="mono">…{{ package.tracking_number[-8:] }}</span>
+                <span class="footnote text-secondary-label">{{ package.carrier }}</span>
+              </span>
+              {% if who %}<span class="subheadline text-secondary-label">{{ who }}</span>{% endif %}
+            </span>
+            <span class="activity-meta">
+              {% if event.kind == "picked_up" %}
+                {% call status_chip("neutral", "bag-check-fill") %}Picked up{% endcall %}
+              {% else %}
+                {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+              {% endif %}
+              <time class="footnote text-secondary-label" datetime="{{ event.when.strftime('%Y-%m-%dT%H:%M:%SZ') }}"
+                    title="{{ event.title }}">{{ event.ago }}</time>
+            </span>
+            {{ icon("chevron-right", "inset-row-chevron") }}
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="inset-list empty-card">
+        {{ icon("box-arrow-in-down") }}
+        <p class="headline mb-1">No activity yet</p>
+        <p class="text-secondary-label mb-3">Check-ins and pickups will show up here.</p>
+        <a href="{{ url_for('checkin.checkin') }}" class="btn btn-primary">{{ icon("box-arrow-in-down") }}<span>Check in a package</span></a>
+      </div>
+    {% endif %}
+  </section>
 {% endblock %}

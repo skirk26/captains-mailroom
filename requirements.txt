@@ -5,3 +5,4 @@ python-dotenv
 Flask-WTF
 Flask-Limiter
 Pillow
+tzdata  # time zone data for zoneinfo; Windows doesn't include it

@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import timedelta
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, request, session, url_for
@@ -43,6 +44,8 @@ def create_app(test_config=None):
 
     app.config.from_mapping(
         APP_ENV=os.environ.get("APP_ENV", "production").strip().lower(),
+        # The mailroom's time zone: where "today" starts on the home screen
+        APP_TIMEZONE=os.environ.get("APP_TIMEZONE", "America/New_York").strip(),
         SECRET_KEY=os.environ.get("SECRET_KEY", DEV_SECRET_KEY),
         SQLALCHEMY_DATABASE_URI="sqlite:///"
         + os.path.join(app.instance_path, "captains_mail.db"),
@@ -127,6 +130,14 @@ def configure_environment(app):
     app_env = app.config["APP_ENV"]
     if app_env not in APP_ENVS:
         raise RuntimeError(f"APP_ENV must be one of {', '.join(APP_ENVS)}, not {app_env!r}.")
+
+    try:
+        ZoneInfo(app.config["APP_TIMEZONE"])
+    except (ZoneInfoNotFoundError, ValueError) as err:
+        raise RuntimeError(
+            f"APP_TIMEZONE {app.config['APP_TIMEZONE']!r} isn't a known time zone. "
+            'Use a name like "America/New_York".'
+        ) from err
 
     if app_env != "production":
         # Plain-HTTP local testing needs non-Secure cookies and no HSTS

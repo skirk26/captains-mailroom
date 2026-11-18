@@ -222,7 +222,9 @@ def test_filter_combines_with_search(client, seeded):
 def test_active_filter_is_marked(client, seeded):
     page = search(client, q="alex", status="picked_up")
     assert re.search(r'href="/search\?q=alex&amp;status=picked_up" class="segmented-control-item"\s+aria-current="page"', page)
-    assert page.count('aria-current="page"') == 1
+    # Only one filter is current (the tab bar's Find tab is marked separately)
+    segments = page.split('<nav class="segmented-control', 1)[1].split("</nav>", 1)[0]
+    assert segments.count('aria-current="page"') == 1
 
 
 @pytest.fixture
@@ -343,7 +345,7 @@ def test_detail_page_for_a_picked_up_package(client, seeded):
     page = detail(client, seeded["picked_up"]).get_data(as_text=True)
 
     assert "Picked up" in page and page.count("by tester") == 2
-    assert "/checkout?expect=" not in page and "<span>Check Out</span>" not in page
+    assert "/checkout?expect=" not in page  # no Check Out button (the tab bar's Check Out tab is separate)
     assert "Add photo" not in page
 
 

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_macros.html" import nav_back, status_chip %}
 {% from "_package.html" import local_time, storage_card, photo_viewer %}
+{# Part of Find: the tab stays highlighted here #}
+{% set tab = "find" %}
 
 {% block title %}Package{% endblock %}
 {# back_url is built on the server from the search's q, status and page #}

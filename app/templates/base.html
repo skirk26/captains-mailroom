@@ -15,7 +15,11 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+{# Pages that show the tab bar set `tab` at the top of the template:
+   {% set tab = "home" %}  (home, checkin, checkout, find, account).
+   Focused flows (scan, confirm, photo) leave it unset: they have their own
+   bottom actions, and two bottom bars would collide. #}
+<body {% if tab %}class="has-tab-bar"{% endif %}>
   {# Nav bar: shown when a page fills in nav_title #}
   {% set nav_title = self.nav_title() | trim %}
   {% if nav_title %}
@@ -30,6 +34,22 @@
     {% block flashes %}{{ flash_messages() }}{% endblock %}
     {% block content %}{% endblock %}
   </main>
+
+  {% if tab %}
+    <nav class="tab-bar" aria-label="Main">
+      {% for name, endpoint, icon_name, label in [
+           ("home", "dashboard.dashboard", "house-door-fill", "Home"),
+           ("checkin", "checkin.checkin", "box-arrow-in-down", "Check In"),
+           ("checkout", "checkout.checkout", "box-arrow-up", "Check Out"),
+           ("find", "search.search", "search", "Find"),
+           ("account", "dashboard.account", "person-circle", "Account"),
+         ] %}
+        <a href="{{ url_for(endpoint) }}" class="tab-bar-item" {% if name == tab %}aria-current="page"{% endif %}>
+          {{ icon(icon_name) }}<span>{{ label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+  {% endif %}
 
   {% block scripts %}{% endblock %}
 </body>

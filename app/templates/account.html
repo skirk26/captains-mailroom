@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% set tab = "account" %}
+
+{% block title %}Account{% endblock %}
+
+{% block content %}
+  <h2 class="large-title mb-4">Account</h2>
+
+  <div class="inset-section">
+    <dl class="inset-list">
+      <div class="inset-row">
+        <dt class="inset-label">Name</dt>
+        <dd class="inset-value">{{ staff.username }}</dd>
+      </div>
+    </dl>
+  </div>
+
+  {# POST, not a link, so another site can't sign staff out #}
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-destructive btn-lg w-100">Sign out</button>
+  </form>
+{% endblock %}

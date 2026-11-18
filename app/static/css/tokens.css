@@ -81,7 +81,8 @@
   --radius-md: 0.75rem;  /* 12px: buttons, inputs */
   --radius-lg: 0.875rem; /* 14px: cards, inset lists */
   --radius-pill: 999px;
-  --touch-target: 44px;  /* minimum tappable size */
+  --touch-target: 44px;
+  --tab-bar-height: 56px;  /* minimum tappable size */
   --nav-bar-height: 44px;
   --content-max-width: 34rem; /* readable column on tablets and laptops */
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 16px rgb(0 0 0 / 0.06);
