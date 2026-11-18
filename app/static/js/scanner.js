@@ -4,6 +4,9 @@
 // Each page sets these on its #reader element:
 //   data-confirm-url        where to go with ?tracking=<decoded value>
 //   data-tracking-patterns  JSON list of tracking-number regexes (CARRIER_PATTERNS)
+//   data-expected-tracking  optional (check-out from a package's page): the
+//                           tracking number staff mean to scan, normalized. A
+//                           different label shows a warning instead of navigating.
 
 // ---- Supported barcode formats ----
 // CODE_128 is what UPS, FedEx, and USPS tracking barcodes use. DATA_MATRIX is
@@ -48,6 +51,8 @@ const viewfinder = document.getElementById("viewfinder");
 const scanFrame = document.getElementById("scan-frame");
 const messageTitle = document.getElementById("scan-message-title");
 const messageBody = document.getElementById("scan-message-body");
+const expectedTracking = reader.dataset.expectedTracking || "";
+const mismatch = document.getElementById("scan-mismatch");
 
 function createScanner() {
   return new Html5Qrcode("reader", {
@@ -149,9 +154,37 @@ function startScanning() {
     .catch(showCameraError);
 }
 
+function normalizeTracking(text) {
+  return text.replace(/\s+/g, "").toUpperCase(); // same as normalize_tracking()
+}
+
 function looksLikeTrackingNumber(text) {
-  const compact = text.replace(/\s+/g, "").toUpperCase(); // same as normalize_tracking()
+  const compact = normalizeTracking(text);
   return trackingPatterns.some((pattern) => pattern.test(compact));
+}
+
+function confirmUrlFor(tracking) {
+  const confirmUrl = new URL(reader.dataset.confirmUrl, window.location.href);
+  confirmUrl.searchParams.set("tracking", tracking); // URL-encodes the value
+  return confirmUrl;
+}
+
+// Scanned a label other than the expected one: stop and ask, rather than
+// opening the wrong package
+function showMismatch(scannedText) {
+  const scanned = normalizeTracking(scannedText);
+  document.getElementById("scan-mismatch-text").textContent =
+    `This isn't the package you selected (it ends ${scanned.slice(-8)}).`;
+  document.getElementById("scan-mismatch-continue").href = confirmUrlFor(scannedText);
+  setState("paused");
+  mismatch.hidden = false;
+}
+
+if (mismatch) {
+  document.getElementById("scan-again").addEventListener("click", () => {
+    mismatch.hidden = true;
+    startScanning();
+  });
 }
 
 function onScanSuccess(decodedText, decodedResult) {
@@ -165,9 +198,11 @@ function onScanSuccess(decodedText, decodedResult) {
   handlingResult = true;
 
   console.log("Scanned:", decodedText);
-  const confirmUrl = new URL(reader.dataset.confirmUrl, window.location.href);
-  confirmUrl.searchParams.set("tracking", decodedText); // URL-encodes the value
-  stopScanning().then(() => window.location.assign(confirmUrl));
+  if (expectedTracking && normalizeTracking(decodedText) !== expectedTracking) {
+    stopScanning().then(() => showMismatch(decodedText));
+    return;
+  }
+  stopScanning().then(() => window.location.assign(confirmUrlFor(decodedText)));
 }
 
 function showCameraError(err) {
@@ -208,7 +243,7 @@ window.addEventListener("pagehide", stopScanning);
 
 // Coming back with the Back button restores the page from cache with the camera off
 window.addEventListener("pageshow", (event) => {
-  if (event.persisted && page.dataset.state !== "error") {
+  if (event.persisted && page.dataset.state !== "error" && page.dataset.state !== "paused") {
     startScanning();
   }
 });

@@ -13,6 +13,23 @@ checkout_bp = Blueprint("checkout", __name__)
 CHECKED_IN_STATUS = "checked_in"
 CHECKED_OUT_STATUS = "checked_out"
 STUDENT_ID_MAX_LENGTH = 20  # matches Package.checked_out_to
+SQLITE_MAX_INTEGER = 2**63 - 1
+
+
+def expected_package(raw_id):
+    """The waiting package ?expect= names (from the detail page's Check Out
+    button), or None. Only a display hint: the confirm page and its POST check
+    everything again, so a wrong or stale value just shows the normal page."""
+    try:
+        package_id = int(raw_id)
+    except (TypeError, ValueError):
+        return None
+    if not 0 < package_id <= SQLITE_MAX_INTEGER:
+        return None  # a larger number would make SQLite raise, not just find nothing
+    package = db.session.get(Package, package_id)
+    if package is None or package.status != CHECKED_IN_STATUS:
+        return None
+    return package
 
 
 @checkout_bp.route("/checkout")
@@ -20,7 +37,14 @@ STUDENT_ID_MAX_LENGTH = 20  # matches Package.checked_out_to
 def checkout():
     # scanner.js uses these to skip 2D codes that aren't tracking numbers
     tracking_patterns = [pattern.pattern for _, pattern in CARRIER_PATTERNS]
-    return render_template("checkout.html", tracking_patterns=tracking_patterns)
+    expected = expected_package(request.args.get("expect"))
+    return render_template(
+        "checkout.html",
+        tracking_patterns=tracking_patterns,
+        expected=expected,
+        # scanner.js compares each scan to this, normalized the same way
+        expected_tracking=normalize_tracking(expected.tracking_number) if expected else "",
+    )
 
 
 def find_package(tracking):

@@ -343,21 +343,23 @@ def test_detail_page_for_a_picked_up_package(client, seeded):
     page = detail(client, seeded["picked_up"]).get_data(as_text=True)
 
     assert "Picked up" in page and page.count("by tester") == 2
-    assert "Go to Check Out" not in page
+    assert "/checkout?expect=" not in page and "<span>Check Out</span>" not in page
     assert "Add photo" not in page
 
 
 def test_checkout_button_only_for_waiting_packages(client, seeded):
-    page = detail(client, seeded["full"]).get_data(as_text=True)
-    assert f'href="/checkout/confirm?tracking={FULL}"' in page
-    assert "Go to Check Out" in page
+    package = seeded["full"]
+    page = detail(client, package).get_data(as_text=True)
+    assert f'<a href="/checkout?expect={package.id}" class="btn btn-primary btn-lg w-100">' in page
+    assert "<span>Check Out</span>" in page
+    assert "/checkout/confirm" not in page  # the button goes to the scanner, not straight to confirm
 
 
 def test_detail_page_with_a_photo(client, seeded):
     page = detail(client, seeded["with_photo"]).get_data(as_text=True)
     assert f'src="/photos/{PHOTO_NAME}"' in page
     assert 'id="photo-viewer"' in page and "js/photo_viewer.js" in page
-    assert "Retake photo" in page
+    assert "Retake photo" not in page  # removed from the detail page
 
 
 def test_detail_page_with_a_missing_photo_file(client, seeded, uploads):

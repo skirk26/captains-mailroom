@@ -1,4 +1,4 @@
-{% from "_macros.html" import flash_messages %}
+{% from "_macros.html" import alert, flash_messages %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -25,10 +25,39 @@
     <main id="checkout" class="checkin-main d-flex flex-column flex-grow-1 px-3 pt-3 pb-4" data-state="starting">
       {{ flash_messages() }}
 
+      {% if expected %}
+        {# Opened from a package's Check Out button: which label to look for #}
+        {% set recipient = expected.recipient %}
+        <div class="expected-banner mb-3">
+          <p class="fw-semibold mb-0">Scan this package: ends <span class="mono">{{ expected.tracking_number[-8:] }}</span></p>
+          {% if recipient and (recipient.full_name or recipient.mailbox_number) %}
+            <p class="small mb-0">
+              {{ recipient.full_name }}
+              {%- if recipient.full_name and recipient.mailbox_number %} · {% endif %}
+              {%- if recipient.mailbox_number %}Box {{ recipient.mailbox_number }}{% endif %}
+            </p>
+          {% endif %}
+        </div>
+
+        {# scanner.js fills this in and unhides it when a different label is scanned #}
+        <div aria-live="assertive">
+          <div id="scan-mismatch" hidden>
+            {% call alert("warning", "mb-3") %}
+              <p id="scan-mismatch-text" class="mb-2"></p>
+              <div class="d-flex flex-wrap gap-2">
+                <button type="button" id="scan-again" class="btn btn-secondary">Scan again</button>
+                <a href="#" id="scan-mismatch-continue" class="btn btn-secondary">Check out the scanned package</a>
+              </div>
+            {% endcall %}
+          </div>
+        </div>
+      {% endif %}
+
       <div id="viewfinder" class="scan-viewfinder flex-grow-1">
         <!-- html5-qrcode empties #reader on start/stop, so overlays live beside it -->
         <div id="reader" data-confirm-url="{{ url_for('checkout.confirm') }}"
-             data-tracking-patterns="{{ tracking_patterns|tojson|forceescape }}"></div>
+             data-tracking-patterns="{{ tracking_patterns|tojson|forceescape }}"
+             {%- if expected_tracking %} data-expected-tracking="{{ expected_tracking }}"{% endif %}></div>
         <div id="scan-frame" class="scan-frame" aria-hidden="true">
           <span class="scan-corner scan-corner-tl"></span>
           <span class="scan-corner scan-corner-tr"></span>
@@ -43,6 +72,11 @@
       </div>
 
       <p class="scan-instruction text-center fw-medium mt-3 mb-2">Point your camera at the shipping label barcode</p>
+      {% if expected %}
+        <p class="text-center mb-2">
+          <a href="{{ url_for('checkout.confirm', tracking=expected.tracking_number) }}" class="app-link">Can't scan? Check out without scanning</a>
+        </p>
+      {% endif %}
       <p class="text-center mb-0">
         <a href="#manual-entry" id="manual-entry-toggle" class="app-link"
            aria-controls="manual-entry" aria-expanded="false">Can't scan? Enter tracking number manually</a>

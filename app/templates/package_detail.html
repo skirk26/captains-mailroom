@@ -62,17 +62,10 @@
   </div>
 
   {% if waiting %}
-    <div class="d-grid gap-2">
-      <a href="{{ url_for('checkout.confirm', tracking=package.tracking_number) }}" class="btn btn-primary btn-lg">
-        {{ icon("box-arrow-up") }}<span>Go to Check Out</span>
-      </a>
-      {# With no photo, the card above already offers "Add photo" #}
-      {% if storage_photo == "photo" %}
-        <a href="{{ url_for('checkin.photo', package_id=package.id) }}" class="btn btn-secondary btn-lg">
-          {{ icon("arrow-counterclockwise") }}<span>Retake photo</span>
-        </a>
-      {% endif %}
-    </div>
+    {# Opens the scanner expecting this package; the confirm page still checks everything #}
+    <a href="{{ url_for('checkout.checkout', expect=package.id) }}" class="btn btn-primary btn-lg w-100">
+      {{ icon("box-arrow-up") }}<span>Check Out</span>
+    </a>
   {% endif %}
 
   {% if storage_photo == "photo" %}

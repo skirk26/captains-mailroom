@@ -1,7 +1,7 @@
 import pytest
 
 from app import create_app, db
-from app.models import Package, Staff
+from app.models import Package, Recipient, Staff
 
 PASSWORD = "test-only-password"
 UPS_TRACKING = "1Z999AA10123456784"
@@ -179,3 +179,118 @@ def test_checkout_leaves_other_packages_untouched(client):
     assert get_package().status == "checked_out"
     assert {tracking: snapshot(tracking) for tracking in others} == before
     assert all(status == "checked_in" for status, *_ in before.values())
+
+
+# ---- From a package's page into the scanner (?expect=) ----
+
+
+def scan_page(client, **params):
+    response = client.get("/checkout", query_string=params)
+    assert response.status_code == 200
+    return response.get_data(as_text=True)
+
+
+def assert_plain_scan_page(html):
+    assert "Scan this package" not in html
+    assert "data-expected-tracking" not in html
+    assert 'id="scan-mismatch"' not in html
+    assert "Check out without scanning" not in html
+    assert '<div id="reader" data-confirm-url="/checkout/confirm"' in html
+
+
+def test_detail_page_check_out_button_goes_to_the_scanner(client):
+    check_in(client, first_name="Alex", last_name="Rivera")
+    package = get_package()
+
+    html = client.get(f"/packages/{package.id}").get_data(as_text=True)
+    assert f'href="/checkout?expect={package.id}"' in html
+
+    check_out(client)
+    html = client.get(f"/packages/{package.id}").get_data(as_text=True)
+    assert "/checkout?expect=" not in html
+
+
+def test_expect_shows_the_banner_and_expected_tracking(client):
+    check_in(client, first_name="Alex", last_name="Rivera")
+    package = get_package()
+
+    html = scan_page(client, expect=package.id)
+
+    assert "Scan this package: ends" in html
+    assert f'<span class="mono">{UPS_TRACKING[-8:]}</span>' in html
+    assert "Alex Rivera · Box 1815" in html
+    assert f'data-expected-tracking="{UPS_TRACKING}"' in html
+    # The warning for a different label is there, hidden until scanner.js needs it
+    assert '<div aria-live="assertive">' in html
+    assert '<div id="scan-mismatch" hidden>' in html
+    assert "Scan again" in html and "Check out the scanned package" in html
+
+
+def test_banner_without_a_name_or_box(client):
+    db.session.add(Package(tracking_number=AMAZON_TRACKING, carrier="Amazon", checked_in_by=logged_in_staff_id()))
+    db.session.commit()
+
+    html = scan_page(client, expect=get_package(AMAZON_TRACKING).id)
+
+    assert "Scan this package: ends" in html
+    assert "Box" not in html.split("Scan this package")[1].split("</div>")[0]
+
+
+def test_check_out_without_scanning_link(client):
+    check_in(client)
+    html = scan_page(client, expect=get_package().id)
+    assert f'<a href="/checkout/confirm?tracking={UPS_TRACKING}" class="app-link">Can\'t scan? Check out without scanning</a>' in html
+
+
+@pytest.mark.parametrize("expect", ["abc", "", "1.5", "-1", "0", "999", "1e3", "<script>", "9" * 40, " 1 "])
+def test_bad_expect_values_are_ignored(client, expect):
+    check_in(client)  # package 1 exists, so only the value's form matters
+    if expect == " 1 ":
+        # int() accepts surrounding spaces; that's still a valid id, not an error
+        assert "Scan this package" in scan_page(client, expect=expect)
+        return
+    assert_plain_scan_page(scan_page(client, expect=expect))
+
+
+def test_picked_up_expect_is_ignored(client):
+    check_in(client)
+    check_out(client)
+    assert_plain_scan_page(scan_page(client, expect=get_package().id))
+
+
+def test_scan_page_without_expect_is_unchanged(client):
+    check_in(client)
+    html = scan_page(client)
+    assert_plain_scan_page(html)
+    assert "Can't scan? Enter tracking number manually" in html
+    assert 'data-tracking-patterns="' in html and "js/scanner.js" in html
+
+
+def test_banner_escapes_names(client):
+    recipient = Recipient(first_name="<script>alert(1)</script>", last_name="<b>Smith</b>", mailbox_number="1815")
+    db.session.add(Package(
+        tracking_number=UPS_TRACKING, carrier="UPS", recipient=recipient,
+        checked_in_by=logged_in_staff_id(), notes="<script>alert(2)</script>",
+    ))
+    db.session.commit()
+
+    html = scan_page(client, expect=get_package().id)
+
+    assert "<script>alert" not in html and "<b>Smith" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt; &lt;b&gt;Smith&lt;/b&gt; · Box 1815" in html
+
+
+def test_expect_never_checks_a_package_out(client):
+    check_in(client)
+    package = get_package()
+
+    scan_page(client, expect=package.id)
+    client.get("/checkout/confirm", query_string={"tracking": UPS_TRACKING})
+    assert client.post(f"/checkout?expect={package.id}").status_code == 405
+    db.session.refresh(package)
+    assert package.status == "checked_in"
+
+    # Only the confirm page's POST does it
+    check_out(client)
+    db.session.refresh(package)
+    assert package.status == "checked_out"

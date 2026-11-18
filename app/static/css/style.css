@@ -126,7 +126,9 @@
   text-align: center;
 }
 
-/* Page states, set by scanner.js via data-state on the scan page's <main> */
+/* Page states, set by scanner.js via data-state on the scan page's <main>:
+   starting, scanning, error, and paused (camera stopped after scanning the
+   wrong package; the warning above the viewfinder explains) */
 [data-state="scanning"] .scan-placeholder,
 [data-state="error"] .scan-frame {
   display: none;
@@ -503,4 +505,12 @@ a.search-result {
 .package-detail-list .inset-row-notes .inset-value {
   text-align: left;
   white-space: pre-line;
+}
+
+/* Check-out scan page opened from a package's Check Out button */
+.expected-banner {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
 }
