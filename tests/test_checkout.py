@@ -236,10 +236,11 @@ def test_banner_without_a_name_or_box(client):
     assert "Box" not in html.split("Scan this package")[1].split("</div>")[0]
 
 
-def test_check_out_without_scanning_link(client):
+def test_expected_package_offers_only_manual_entry(client):
     check_in(client)
     html = scan_page(client, expect=get_package().id)
-    assert f'<a href="/checkout/confirm?tracking={UPS_TRACKING}" class="app-link">Can\'t scan? Check out without scanning</a>' in html
+    assert "Can't scan? Enter manually" in html
+    assert "Check out without scanning" not in html
 
 
 @pytest.mark.parametrize("expect", ["abc", "", "1.5", "-1", "0", "999", "1e3", "<script>", "9" * 40, " 1 "])

@@ -37,9 +37,3 @@
     </div>
   {% endif %}
 {% endblock %}
-
-{% block bottom_links %}
-  {% if expected %}
-    <a href="{{ url_for('checkout.confirm', tracking=expected.tracking_number) }}" class="app-link">Can't scan? Check out without scanning</a>
-  {% endif %}
-{% endblock %}
