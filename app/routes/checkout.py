@@ -4,7 +4,7 @@ from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
-from app.models import Package, utc_now
+from app.models import SQLITE_MAX_INTEGER, Package, utc_now
 from app.photos import photo_exists
 from app.routes.checkin import CARRIER_PATTERNS, normalize_tracking
 
@@ -13,7 +13,6 @@ checkout_bp = Blueprint("checkout", __name__)
 CHECKED_IN_STATUS = "checked_in"
 CHECKED_OUT_STATUS = "checked_out"
 STUDENT_ID_MAX_LENGTH = 20  # matches Package.checked_out_to
-SQLITE_MAX_INTEGER = 2**63 - 1
 
 
 def expected_package(raw_id):

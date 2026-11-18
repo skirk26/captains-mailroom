@@ -7,7 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
-from app.models import Package, Recipient
+from app.models import PACKAGE_ID, SQLITE_MAX_INTEGER, Package, Recipient
 from app.photos import PhotoRejected, delete_photo, photo_exists, prepare_photo, store_photo
 
 checkin_bp = Blueprint("checkin", __name__)
@@ -254,7 +254,7 @@ def location_photo_url(package):
     return url_for("photos.photo", filename=package.location_photo_path)
 
 
-@checkin_bp.route("/checkin/photo/<int:package_id>")
+@checkin_bp.route(f"/checkin/photo/<{PACKAGE_ID}:package_id>")
 @login_required
 def photo(package_id):
     # Imported here: checkout.py imports from this module
@@ -278,7 +278,7 @@ def photo_error(message, status):
 
 # Called by checkin_photo.js with fetch; always answers in JSON. CSRF is checked
 # before this runs (the token comes in the X-CSRFToken header).
-@checkin_bp.route("/checkin/photo/<int:package_id>", methods=["POST"])
+@checkin_bp.route(f"/checkin/photo/<{PACKAGE_ID}:package_id>", methods=["POST"])
 @login_required
 def upload_photo(package_id):
     from app.routes.checkout import CHECKED_IN_STATUS, CHECKED_OUT_STATUS
@@ -341,9 +341,6 @@ def upload_photo(package_id):
 @checkin_bp.route("/checkin/photo/<int:package_id>/skip")
 @login_required
 def skip_photo(package_id):
-    # Imported here: checkout.py imports from this module
-    from app.routes.checkout import SQLITE_MAX_INTEGER
-
     # Only for the message; a number too big for SQLite can't be a package
     package = db.session.get(Package, package_id) if package_id <= SQLITE_MAX_INTEGER else None
     if package is None:

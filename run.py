@@ -1,14 +1,6 @@
-from flask import redirect, url_for
-
 from app import create_app, debug_enabled
 
 app = create_app()
-
-
-# Login redirects to "/", so send signed-in staff on to the dashboard
-@app.route("/")
-def index():
-    return redirect(url_for("dashboard.dashboard"))
 
 
 if __name__ == "__main__":

@@ -42,7 +42,6 @@ sys.path.insert(0, str(ROOT))
 os.environ["APP_ENV"] = "development"
 os.environ["FLASK_DEBUG"] = "0"
 
-from flask import redirect, url_for  # noqa: E402
 from PIL import Image  # noqa: E402
 from playwright.sync_api import sync_playwright  # noqa: E402
 from werkzeug.serving import make_server  # noqa: E402
@@ -97,9 +96,6 @@ def build_app(tmp):
         ])
         db.session.commit()
         ids = {p.tracking_number: p.id for p in db.session.scalars(db.select(Package))}
-
-    # Same as run.py: sign-in redirects to "/", which sends staff to the dashboard
-    app.add_url_rule("/", "index", lambda: redirect(url_for("dashboard.dashboard")))
     return app, ids
 
 

@@ -6,6 +6,13 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app import db, login_manager
 
 
+# The largest id SQLite can store. Routes that take a package id use
+# <PACKAGE_ID:package_id>, so a longer number gets the 404 page instead of
+# an OverflowError (500) from SQLite.
+SQLITE_MAX_INTEGER = 2**63 - 1
+PACKAGE_ID = f"int(max={SQLITE_MAX_INTEGER})"
+
+
 def utc_now():
     return datetime.now(timezone.utc)
 

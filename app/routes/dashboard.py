@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, current_app, redirect, render_template, url_for
 from flask_login import current_user, login_required
 from sqlalchemy import and_, case, func
 from sqlalchemy.orm import joinedload
@@ -93,6 +93,13 @@ def recent_activity(limit=RECENT_EVENTS):
         }
         for kind, package, when in events[:limit]
     ]
+
+
+# Sign-in and the error pages send staff to "/". Defined here, not in run.py,
+# so it works however the app is started.
+@dashboard_bp.route("/")
+def index():
+    return redirect(url_for("dashboard.dashboard"))
 
 
 @dashboard_bp.route("/dashboard")

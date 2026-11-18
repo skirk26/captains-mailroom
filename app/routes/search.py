@@ -10,7 +10,7 @@ from sqlalchemy import and_, false, func, or_
 from sqlalchemy.orm import contains_eager
 
 from app import db, limiter
-from app.models import Package, Recipient
+from app.models import PACKAGE_ID, Package, Recipient
 from app.photos import photo_exists
 from app.routes.checkin import normalize_tracking
 from app.routes.checkout import CHECKED_IN_STATUS, CHECKED_OUT_STATUS, storage_photo_state
@@ -154,7 +154,7 @@ def search():
     )
 
 
-@search_bp.route("/packages/<int:package_id>")
+@search_bp.route(f"/packages/<{PACKAGE_ID}:package_id>")
 @login_required
 def package_detail(package_id):
     package = db.get_or_404(Package, package_id)
