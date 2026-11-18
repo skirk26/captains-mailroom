@@ -1,4 +1,4 @@
-{% from "_macros.html" import flash_messages %}
+{% from "_macros.html" import flash_messages, toasts %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -35,6 +35,8 @@
     {% block content %}{% endblock %}
   </main>
 
+  {{ toasts() }}
+
   {% if tab %}
     <nav class="tab-bar" aria-label="Main">
       {% for name, endpoint, icon_name, label in [
@@ -51,6 +53,7 @@
     </nav>
   {% endif %}
 
+  <script src="{{ url_for('static', filename='js/toasts.js') }}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

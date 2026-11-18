@@ -1,120 +1,119 @@
-{% from "_macros.html" import alert, status_chip %}
+{% extends "base.html" %}
+{% from "_macros.html" import alert, status_chip, nav_back %}
 {% from "_package.html" import local_time, storage_card, photo_viewer %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  <title>Confirm Pickup · Captain's Mail</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  <div class="page-shell d-flex flex-column">
-    <header class="app-header d-flex align-items-center px-2">
-      <a href="{{ url_for('checkout.checkout') }}" class="header-back" aria-label="Back to scanner">
-        {{ icon("chevron-left") }}
-      </a>
-      <h1 class="h5 fw-semibold mb-0 ms-1">Confirm Pickup</h1>
-    </header>
 
-    <main class="flex-grow-1 px-3 pt-4 pb-4">
-      {% if state == "not_found" %}
-        {% call alert("danger") %}
-          <p class="fw-semibold mb-1">No package found with this tracking number.</p>
-          <p class="tracking-input mb-0 text-break">{{ tracking }}</p>
+{% block title %}Confirm Pickup{% endblock %}
+{% block nav_leading %}{{ nav_back(url_for("checkout.checkout"), "Scan") }}{% endblock %}
+{% block nav_title %}Confirm Pickup{% endblock %}
+
+{% block content %}
+  {% if state == "not_found" %}
+    {# Unmissable, with the next step as a button #}
+    {% call alert("danger") %}
+      <p class="fw-semibold mb-1">No package found with this tracking number.</p>
+      <p class="tracking-input mb-3 text-break">{{ tracking }}</p>
+      <a href="{{ url_for('checkin.confirm', tracking=tracking, source=source or None) }}" class="btn btn-secondary">Check it in now</a>
+    {% endcall %}
+
+  {% else %}
+    {% for error in errors %}
+      {% call alert("danger", "mb-3") %}{{ error }}{% endcall %}
+    {% endfor %}
+
+    {% if state == "checked_in" %}
+      {{ storage_card(package, storage_photo) }}
+    {% endif %}
+
+    <div class="mb-3">
+      {% if state == "picked_up" %}
+        {% call status_chip("neutral", "bag-check-fill") %}
+          Picked up{% if package.checked_out_at %} {{ local_time(package.checked_out_at) }}{% endif %}
         {% endcall %}
-        <p class="mb-0">
-          <a href="{{ url_for('checkin.confirm', tracking=tracking, source=source or None) }}" class="app-link">Check it in now</a>
-        </p>
-
       {% else %}
-        {% for error in errors %}
-          {% call alert("danger", "mb-3") %}{{ error }}{% endcall %}
-        {% endfor %}
+        {% call status_chip("success", "check-circle-fill") %}Checked in{% endcall %}
+      {% endif %}
+    </div>
 
-        {% if state == "checked_in" %}
-          {{ storage_card(package, storage_photo) }}
-        {% endif %}
-
-        <div class="card package-card shadow-sm mb-4">
-          <div class="card-body">
-            {% if state == "picked_up" %}
-              {% call status_chip("neutral", "bag-check-fill", "mb-3") %}
-                Picked up{% if package.checked_out_at %} {{ local_time(package.checked_out_at) }}{% endif %}
-              {% endcall %}
-            {% else %}
-              {% call status_chip("success", "check-circle-fill", "mb-3") %}Checked in{% endcall %}
-            {% endif %}
-
-            <p class="small text-muted mb-1">Tracking number</p>
-            <p class="tracking-input fw-semibold text-break mb-3">{{ package.tracking_number }}</p>
-
-            <dl class="package-details mb-0">
-              <dt>Carrier</dt>
-              <dd>{{ package.carrier }}</dd>
-
-              {% if package.recipient and package.recipient.full_name %}
-                <dt>Recipient</dt>
-                <dd>{{ package.recipient.full_name }}</dd>
-              {% endif %}
-
-              {% if package.recipient and package.recipient.mailbox_number %}
-                <dt>Box number</dt>
-                <dd>{{ package.recipient.mailbox_number }}</dd>
-              {% endif %}
-
-              {% if package.notes %}
-                <dt>Notes</dt>
-                <dd class="package-notes">{{ package.notes }}</dd>
-              {% endif %}
-
-              <dt>Checked in</dt>
-              <dd>{{ local_time(package.checked_in_at) }}</dd>
-
-              {% if state == "picked_up" %}
-                {% if package.checked_out_to %}
-                  <dt>Student ID</dt>
-                  <dd>{{ package.checked_out_to }}</dd>
-                {% endif %}
-
-                {% if package.checked_out_staff %}
-                  <dt>Checked out by</dt>
-                  <dd>{{ package.checked_out_staff.username }}</dd>
-                {% endif %}
-              {% endif %}
-            </dl>
-          </div>
+    <div class="inset-section">
+      <dl class="inset-list package-detail-list">
+        <div class="inset-row">
+          <dt class="inset-label">Tracking</dt>
+          <dd class="inset-value mono">{{ package.tracking_number }}</dd>
         </div>
-
+        <div class="inset-row">
+          <dt class="inset-label">Carrier</dt>
+          <dd class="inset-value">{{ package.carrier }}</dd>
+        </div>
+        {% if package.recipient and package.recipient.full_name %}
+          <div class="inset-row">
+            <dt class="inset-label">Recipient</dt>
+            <dd class="inset-value">{{ package.recipient.full_name }}</dd>
+          </div>
+        {% endif %}
+        {% if package.recipient and package.recipient.mailbox_number %}
+          <div class="inset-row">
+            <dt class="inset-label">Box number</dt>
+            <dd class="inset-value">{{ package.recipient.mailbox_number }}</dd>
+          </div>
+        {% endif %}
+        {% if package.notes %}
+          <div class="inset-row inset-row-notes">
+            <dt class="inset-label">Notes</dt>
+            <dd class="inset-value package-notes">{{ package.notes }}</dd>
+          </div>
+        {% endif %}
+        <div class="inset-row">
+          <dt class="inset-label">Checked in</dt>
+          <dd class="inset-value">{{ local_time(package.checked_in_at) }}</dd>
+        </div>
         {% if state == "picked_up" %}
-          <p class="text-center text-muted mb-0">No further action needed.</p>
-        {% else %}
-          <form id="pickup-form" method="post" action="{{ url_for('checkout.confirm') }}" novalidate>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="tracking" value="{{ package.tracking_number }}">
-            <div class="mb-4">
-              <label for="student-id" class="form-label fw-semibold">Student ID <span class="text-muted fw-normal">(optional)</span></label>
-              <input type="text" class="form-control form-control-lg" id="student-id" name="student_id"
+          {% if package.checked_out_to %}
+            <div class="inset-row">
+              <dt class="inset-label">Student ID</dt>
+              <dd class="inset-value">{{ package.checked_out_to }}</dd>
+            </div>
+          {% endif %}
+          {% if package.checked_out_staff %}
+            <div class="inset-row">
+              <dt class="inset-label">Checked out by</dt>
+              <dd class="inset-value">{{ package.checked_out_staff.username }}</dd>
+            </div>
+          {% endif %}
+        {% endif %}
+      </dl>
+    </div>
+
+    {% if state == "picked_up" %}
+      <p class="text-center text-secondary-label mb-0">No further action needed.</p>
+    {% else %}
+      <form id="pickup-form" method="post" action="{{ url_for('checkout.confirm') }}" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="tracking" value="{{ package.tracking_number }}">
+        <div class="inset-section">
+          <div class="inset-list">
+            <div class="inset-row inset-field">
+              <label for="student-id" class="inset-field-label">Student ID (optional)</label>
+              <input type="text" class="inset-field-input" id="student-id" name="student_id"
                      inputmode="numeric" autocomplete="off" maxlength="20"
                      value="{{ student_id }}" placeholder="ID of the person picking it up">
             </div>
+          </div>
+        </div>
+        <div class="action-bar">
+          <div class="action-bar-inner">
             <button type="submit" id="pickup-button" class="btn btn-primary btn-lg w-100">Mark as Picked Up</button>
-          </form>
-        {% endif %}
-      {% endif %}
-    </main>
-  </div>
+          </div>
+        </div>
+      </form>
+    {% endif %}
+  {% endif %}
 
   {% if storage_photo == "photo" %}
     {{ photo_viewer(package) }}
   {% endif %}
+{% endblock %}
 
+{% block scripts %}
   <script src="{{ url_for('static', filename='js/local_time.js') }}"></script>
   {% if state == "checked_in" %}
     <script src="{{ url_for('static', filename='js/checkout_confirm.js') }}"></script>
@@ -122,5 +121,4 @@
   {% if storage_photo == "photo" %}
     <script src="{{ url_for('static', filename='js/photo_viewer.js') }}"></script>
   {% endif %}
-</body>
-</html>
+{% endblock %}

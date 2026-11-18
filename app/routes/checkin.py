@@ -37,6 +37,19 @@ SEARCH_LIMIT = 8
 # Every field the confirm form posts, so a failed save can refill all of them
 FORM_FIELDS = ("tracking", "carrier", "first_name", "last_name", "box_number", "notes", "source")
 
+# Which field each validate_checkin_form() message belongs to (by how it
+# starts), so the confirm page can show it under that field. "recipient" is
+# the name/box/notes group as a whole.
+FIELD_ERROR_PREFIXES = (
+    ("tracking", ("Enter the tracking number", "Tracking number", DUPLICATE_MESSAGE)),
+    ("carrier", ("Choose",)),
+    ("first_name", ("First name",)),
+    ("last_name", ("Last name",)),
+    ("box_number", ("Box number",)),
+    ("notes", ("Notes",)),
+    ("recipient", ("Fill in at least",)),
+)
+
 
 def normalize_tracking(tracking):
     # USPS prints numbers with spaces and people type in lowercase; barcodes have
@@ -129,14 +142,39 @@ def find_or_create_recipient(first_name, last_name, box_number):
     return recipient
 
 
+def errors_by_field(errors):
+    by_field = {}
+    for error in errors:
+        for field, prefixes in FIELD_ERROR_PREFIXES:
+            if error.startswith(prefixes):
+                by_field.setdefault(field, []).append(error)
+                break
+    return by_field
+
+
 def render_confirm(form, errors=()):
+    duplicate_id = None
+    if DUPLICATE_MESSAGE in errors:
+        # For the "Open the existing record" button
+        duplicate_id = db.session.scalar(
+            db.select(Package.id).filter_by(tracking_number=normalize_tracking(form.get("tracking", "")))
+        )
     return render_template(
         "checkin_confirm.html",
         form=form,
-        errors=errors,
+        # The duplicate gets its own alert with a button; the summary lists the rest
+        errors=[error for error in errors if error != DUPLICATE_MESSAGE],
+        field_errors=errors_by_field(errors),
+        duplicate=DUPLICATE_MESSAGE in errors,
+        duplicate_id=duplicate_id,
         carriers=CARRIERS,
         entered_manually=form.get("source") == "manual",
     )
+
+
+def ending(tracking):
+    # "…23456784": the last 8 characters, as on the search results
+    return f"…{tracking[-8:]}"
 
 
 @checkin_bp.route("/checkin")
@@ -291,7 +329,11 @@ def upload_photo(package_id):
     if old_filename != filename:
         delete_photo(old_filename)
 
-    flash("Photo saved.", "success")
+    # Back to the scanner, ready for the next package
+    if old_filename:
+        flash(f"Photo updated: {ending(package.tracking_number)}.", "toast")
+    else:
+        flash(f"Checked in: {ending(package.tracking_number)}. Photo saved.", "toast")
     return jsonify(redirect=url_for("checkin.checkin"))
 
 
@@ -299,7 +341,15 @@ def upload_photo(package_id):
 @checkin_bp.route("/checkin/photo/<int:package_id>/skip")
 @login_required
 def skip_photo(package_id):
-    flash("Checked in without a photo.", "info")
+    # Imported here: checkout.py imports from this module
+    from app.routes.checkout import SQLITE_MAX_INTEGER
+
+    # Only for the message; a number too big for SQLite can't be a package
+    package = db.session.get(Package, package_id) if package_id <= SQLITE_MAX_INTEGER else None
+    if package is None:
+        flash("Checked in. No photo.", "toast")
+    else:
+        flash(f"Checked in: {ending(package.tracking_number)}. No photo.", "toast")
     return redirect(url_for("checkin.checkin"))
 
 

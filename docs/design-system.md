@@ -16,7 +16,7 @@ Apple's branding, icons, or fonts.
 |---|---|
 | `app/static/css/tokens.css` | Every color, spacing step, radius, type size, and timing, as CSS custom properties. Change the theme here. |
 | `app/static/css/components.css` | Shared components, built on Bootstrap 5.3 and the tokens. |
-| `app/static/css/style.css` | Page-specific layout: the scanner viewfinder, recipient suggestions, and package details. |
+| `app/static/css/style.css` | Page-specific layout: the scan screens, confirm pages, recipient suggestions, home screen, and search. |
 | `app/templates/base.html` | The base layout: viewport, safe areas, nav bar, flash messages, and content. |
 | `app/templates/_macros.html` | Jinja macros for alerts, flash messages, status chips, and the back button. |
 | `app/templates/_package.html` | Macros shared by the pages that show one package: local times, the "Where it's stored" card, and the full-screen photo viewer (with `js/photo_viewer.js`). |
@@ -56,6 +56,9 @@ All contrast ratios are WCAG 2 ratios against the background shown.
 | `--color-info` / `-bg` | `#1B386D` on `#E6ECF6` | Neutral notices, such as "You have been signed out." | 9.7:1 |
 | `--color-viewfinder` | `#000000` | Camera viewfinder background, in both modes | |
 | `--color-viewfinder-mark` | `#FFFFFF` | Scan-area corner brackets | |
+| `--color-scan-bar` | Black at 55% | Top bar over the camera | White text on it: 4.7:1 even over a white label, 21:1 over a dark image |
+| `--color-scan-success` | `#34C759` | Scan frame after a good read, always with a check icon | 9.5:1 against the black viewfinder |
+| `--color-scrim` | Black at 45% | Dimmed page behind a bottom sheet | |
 
 Red isn't a CNU brand color. The brand guide asks for it to be kept out of
 official materials. Here it's only a functional signal for errors and
@@ -205,6 +208,46 @@ tall:
 </nav>
 ```
 
+### Field rows
+
+Forms use the inset list with the label above each field. A server message
+appears directly under its field (with an icon, a red bar, `aria-invalid`, and
+`aria-describedby`), and the form also gets a summary alert at the top.
+
+```html
+<div class="inset-list">
+  <div class="inset-row inset-field">
+    <label class="inset-field-label" for="box-number">Box number</label>
+    <input class="inset-field-input" id="box-number" name="box_number">
+  </div>
+</div>
+```
+
+A native `<select class="inset-select">` at the end of an ordinary row opens
+the phone's own picker.
+
+### Action bar
+
+The screen's main button, fixed to the bottom above the home indicator. Put
+`<div class="action-bar"><div class="action-bar-inner">…</div></div>` inside
+the page content; the content gets enough bottom padding that nothing hides
+behind it. Used for Save Check-In, Mark as Picked Up, and the photo buttons.
+
+### Toasts
+
+Brief confirmations at the top of the screen, such as "Picked up: …23456784."
+Flash a message with the category `"toast"`; `toasts()` in `_macros.html`
+shows it in an `aria-live` region, and `js/toasts.js` hides it after 3 seconds
+or when its close button is tapped. Everything else (warnings, errors) stays
+an inline alert.
+
+### Bottom sheet
+
+A modal `<dialog class="sheet">` that rises from the bottom, with a handle,
+a title, and a 44px close button. Escape closes it (built into `<dialog>`),
+and so does tapping the dimmed area outside the panel. The scan screens use it
+for typing a tracking number; the camera pauses while it's open.
+
 ### Status chips and alerts
 
 Both come from `_macros.html`, so the icon is never left out:
@@ -235,5 +278,27 @@ Apple's SF Symbols aren't used.
 | Search (Find tab) | Extends `base.html` with the tab bar: a search field, a segmented status filter, and result rows that link to the package (64px thumbnail, details, status chip) |
 | Package detail | Extends `base.html` with the tab bar (Find stays current): the storage card and photo viewer from `_package.html`, a status chip, and inset detail rows |
 | Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |
-| Scan pages (check in, check out) | Their own layout for now, with the new colors, icons, and nav bar look |
-| Confirm pages (check in, pickup) | Their own layout for now, with the new colors, icons, chips, and alerts |
+| Scan pages (check in, check out) | Extend `_scan_page.html`: full-screen camera under a translucent top bar (back, title, flashlight when supported), the scan frame, alerts and banners floating over the camera, a bottom panel, and the manual-entry bottom sheet. No tab bar. |
+| Confirm pages (check in, pickup) | Extend `base.html` (no tab bar): a header card or the storage card, field rows or read-only inset rows, and an action bar |
+
+## Scan feedback
+
+On a good read the scan frame turns green with a check icon for about 300 ms,
+and phones that support it give a 30 ms vibration, before the confirm page
+opens. With `prefers-reduced-motion` the frame still turns green; it just
+doesn't animate. Camera problems (blocked permission, no camera, camera in
+use, an insecure connection) show as an inline warning alert with a
+plain-language fix and a Try again button.
+
+## Contrast check
+
+Every text pair in the palette was checked against WCAG 2 (4.5:1 for text),
+in light and dark mode. All pass except one:
+
+| Pair | Light | Dark | Note |
+|---|---|---|---|
+| Disabled button text (`--color-on-disabled` on `--color-fill-disabled`) | 3.6:1 | 5.0:1 | WCAG exempts disabled controls; the button's label still reads, and it's never the only way to know an action is unavailable. |
+
+Graphics need 3:1: the green scan frame is 9.5:1 on the black camera view, and
+the sheet handle (CNU Silver, decorative) is 3.6:1 in light mode and 4.8:1 in
+dark mode.

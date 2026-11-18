@@ -1,111 +1,133 @@
-{% from "_macros.html" import alert, status_chip %}
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#F2F3F5" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-  <title>Confirm Check-In · Captain's Mail</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-  <div class="page-shell d-flex flex-column">
-    <header class="app-header d-flex align-items-center px-2">
-      <a href="{{ url_for('checkin.checkin') }}" class="header-back" aria-label="Back to scanner">
-        {{ icon("chevron-left") }}
-      </a>
-      <h1 class="h5 fw-semibold mb-0 ms-1">Confirm Check-In</h1>
-    </header>
+{% extends "base.html" %}
+{% from "_macros.html" import alert, status_chip, nav_back %}
 
-    <main class="flex-grow-1 px-3 pt-4 pb-4">
-      {% if entered_manually %}
-        {% call status_chip("neutral", "pencil-fill", "mb-4") %}Entered manually{% endcall %}
-      {% else %}
-        {% call status_chip("success", "check-circle-fill", "mb-4") %}Barcode scanned{% endcall %}
+{% block title %}Confirm Check-In{% endblock %}
+{% block nav_leading %}{{ nav_back(url_for("checkin.checkin"), "Scan") }}{% endblock %}
+{% block nav_title %}Confirm Check-In{% endblock %}
+
+{# A server message under its field, linked to the field with aria-describedby #}
+{% macro field_error(name) -%}
+  {% for message in field_errors.get(name, []) %}
+    <p class="field-error" id="{{ name }}-error">{{ icon("exclamation-octagon-fill") }}<span>{{ message }}</span></p>
+  {% endfor %}
+{%- endmacro %}
+
+{% macro invalid_attrs(name) -%}
+  {% if name in field_errors %} aria-invalid="true" aria-describedby="{{ name }}-error"{% endif %}
+{%- endmacro %}
+
+{% block content %}
+  {% if duplicate %}
+    {# Unmissable, with the next step as a button #}
+    {% call alert("danger", "mb-3") %}
+      <p class="fw-semibold mb-2">This package has already been checked in.</p>
+      {% if duplicate_id %}
+        <a href="{{ url_for('search.package_detail', package_id=duplicate_id) }}" class="btn btn-secondary">Open the existing record</a>
       {% endif %}
+    {% endcall %}
+  {% endif %}
 
-      <form id="checkin-form" method="post" action="{{ url_for('checkin.confirm') }}"
-            data-search-url="{{ url_for('checkin.search_recipients') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        {% if errors %}
-          {% call alert("danger") %}
-            {% if errors|length == 1 %}
-              {{ errors[0] }}
-            {% else %}
-              <ul class="mb-0 ps-3">
-                {% for error in errors %}<li>{{ error }}</li>{% endfor %}
-              </ul>
-            {% endif %}
-          {% endcall %}
-        {% endif %}
+  {% if errors %}
+    {% call alert("danger", "mb-3") %}
+      {% if errors|length == 1 %}
+        {{ errors[0] }}
+      {% else %}
+        <p class="fw-semibold mb-1">Fix these {{ errors|length }} things:</p>
+        <ul class="mb-0 ps-3">
+          {% for error in errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endcall %}
+  {% endif %}
 
-        {# Keeps the scanned/manual chip right if the form comes back with errors #}
-        <input type="hidden" name="source" value="{{ form.source }}">
+  <form id="checkin-form" method="post" action="{{ url_for('checkin.confirm') }}"
+        data-search-url="{{ url_for('checkin.search_recipients') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {# Keeps the scanned/manual chip right if the form comes back with errors #}
+    <input type="hidden" name="source" value="{{ form.source }}">
 
-        <div class="mb-3">
-          <label for="tracking" class="form-label">Tracking number</label>
-          <input type="text" class="form-control form-control-lg tracking-input" id="tracking" name="tracking"
-                 value="{{ form.tracking }}" maxlength="100" autocomplete="off" autocapitalize="characters"
-                 autocorrect="off" spellcheck="false" required>
-          <div class="form-text">Check this matches the label. Fix any misread characters.</div>
-          <div class="invalid-feedback">Enter the tracking number.</div>
-        </div>
+    {# Header card: the number staff must match against the label #}
+    <div class="confirm-header {{ 'is-invalid' if 'tracking' in field_errors }}">
+      {% if entered_manually %}
+        {% call status_chip("neutral", "pencil-fill") %}Entered manually{% endcall %}
+      {% else %}
+        {% call status_chip("success", "check-circle-fill") %}Barcode scanned{% endcall %}
+      {% endif %}
+      <label for="tracking" class="confirm-header-label">Tracking number</label>
+      <input type="text" class="form-control form-control-lg tracking-input" id="tracking" name="tracking"
+             value="{{ form.tracking }}" maxlength="100" autocomplete="off" autocapitalize="characters"
+             autocorrect="off" spellcheck="false" required{{ invalid_attrs("tracking") }}>
+      <div class="form-text">Check this matches the label. Fix any misread characters.</div>
+      <div class="invalid-feedback">Enter the tracking number.</div>
+      {{ field_error("tracking") }}
+    </div>
 
-        <div class="mb-3">
-          <label for="carrier" class="form-label">Carrier</label>
-          <select class="form-select form-select-lg" id="carrier" name="carrier" required>
+    <div class="inset-section">
+      <div class="inset-list">
+        <div class="inset-row"{% if "carrier" in field_errors %} data-invalid{% endif %}>
+          <label for="carrier" class="inset-label">Carrier</label>
+          <select class="inset-select" id="carrier" name="carrier" required{{ invalid_attrs("carrier") }}>
             <option value="" {{ "selected" if not form.carrier }}>Select carrier</option>
             {% for carrier in carriers %}
               <option value="{{ carrier }}" {{ "selected" if carrier == form.carrier }}>{{ carrier }}</option>
             {% endfor %}
           </select>
-          <div class="invalid-feedback">Choose the carrier.</div>
         </div>
+      </div>
+      {% if "carrier" in field_errors %}<div class="px-3">{{ field_error("carrier") }}</div>{% endif %}
+    </div>
 
-        {# suggest-anchor: recipient_search.js shows suggestions under these fields #}
-        <div class="row g-2 mb-3 suggest-anchor">
-          <div class="col-6">
-            <label for="first-name" class="form-label">First name</label>
-            <input type="text" class="form-control form-control-lg" id="first-name" name="first_name"
-                   value="{{ form.first_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
-                   spellcheck="false">
-          </div>
-          <div class="col-6">
-            <label for="last-name" class="form-label">Last name</label>
-            <input type="text" class="form-control form-control-lg" id="last-name" name="last_name"
-                   value="{{ form.last_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
-                   spellcheck="false">
-          </div>
+    <div class="inset-section">
+      <p class="inset-header">Recipient</p>
+      {# Overflow visible so recipient_search.js suggestions can float below a field #}
+      <div class="inset-list inset-list-open">
+        <div class="inset-row inset-field"{% if "first_name" in field_errors %} data-invalid{% endif %}>
+          <label for="first-name" class="inset-field-label">First name</label>
+          <input type="text" class="inset-field-input" id="first-name" name="first_name"
+                 value="{{ form.first_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
+                 spellcheck="false"{{ invalid_attrs("first_name") }}>
+          {{ field_error("first_name") }}
         </div>
-
-        <div class="mb-3 suggest-anchor">
-          <label for="box-number" class="form-label">Box number</label>
+        <div class="inset-row inset-field suggest-anchor"{% if "last_name" in field_errors %} data-invalid{% endif %}>
+          <label for="last-name" class="inset-field-label">Last name</label>
+          <input type="text" class="inset-field-input" id="last-name" name="last_name"
+                 value="{{ form.last_name }}" maxlength="50" autocomplete="off" autocapitalize="words"
+                 spellcheck="false"{{ invalid_attrs("last_name") }}>
+          {{ field_error("last_name") }}
+        </div>
+        <div class="inset-row inset-field suggest-anchor"{% if "box_number" in field_errors %} data-invalid{% endif %}>
+          <label for="box-number" class="inset-field-label">Box number</label>
           {# pattern only checks non-empty values: blank passes, anything else must be 1000-5199.
              The server checks this too; this just catches mistakes before submitting. #}
-          <input type="text" class="form-control form-control-lg" id="box-number" name="box_number"
+          <input type="text" class="inset-field-input" id="box-number" name="box_number"
                  value="{{ form.box_number }}" inputmode="numeric" pattern="1[0-9]{3}|[2-4][0-9]{3}|5[01][0-9]{2}"
-                 maxlength="4" autocomplete="off">
-          <div class="invalid-feedback">Box numbers run from 1000 to 5199.</div>
+                 maxlength="4" autocomplete="off"{{ invalid_attrs("box_number") }}>
+          <div class="invalid-feedback">{{ icon("exclamation-octagon-fill") }}<span>Box numbers run from 1000 to 5199.</span></div>
+          {{ field_error("box_number") }}
         </div>
-
-        <div class="mb-4">
-          <label for="notes" class="form-label">Notes (optional)</label>
-          <textarea class="form-control form-control-lg" id="notes" name="notes" rows="3" maxlength="500"
-                    placeholder="e.g., Package arrived damaged">{{ form.notes }}</textarea>
+        <div class="inset-row inset-field"{% if "notes" in field_errors %} data-invalid{% endif %}>
+          <label for="notes" class="inset-field-label">Notes (optional)</label>
+          <textarea class="inset-field-input" id="notes" name="notes" rows="3" maxlength="500"
+                    placeholder="e.g., Package arrived damaged"{{ invalid_attrs("notes") }}>{{ form.notes }}</textarea>
+          {{ field_error("notes") }}
         </div>
+      </div>
+      {% if "recipient" in field_errors %}
+        <div class="px-3">{{ field_error("recipient") }}</div>
+      {% else %}
+        <p class="inset-footer">Fill in at least a name, a box number, or a note.</p>
+      {% endif %}
+    </div>
 
+    <div class="action-bar">
+      <div class="action-bar-inner">
         <button type="submit" id="save-button" class="btn btn-primary btn-lg w-100">Save Check-In</button>
-        <p class="form-text text-center mt-2 mb-0">Fill in at least a name, a box number, or a note.</p>
-      </form>
-    </main>
-  </div>
+      </div>
+    </div>
+  </form>
+{% endblock %}
 
+{% block scripts %}
   <script src="{{ url_for('static', filename='js/checkin_confirm.js') }}"></script>
   <script src="{{ url_for('static', filename='js/recipient_search.js') }}"></script>
-</body>
-</html>
+{% endblock %}

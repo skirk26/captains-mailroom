@@ -1,5 +1,5 @@
 {# Shared pieces of the design system. Import what a page needs:
-   {% from "_macros.html" import alert, flash_messages, status_chip, nav_back %} #}
+   {% from "_macros.html" import alert, flash_messages, toasts, status_chip, nav_back %} #}
 
 {# Category -> (alert style, icon). Status color always comes with an icon. #}
 {% set ALERT_STYLES = {
@@ -18,13 +18,30 @@
   </div>
 {%- endmacro %}
 
-{# Flashed messages, each as an inline alert #}
+{# Flashed messages, each as an inline alert. "toast" messages are left for toasts(). #}
 {% macro flash_messages() -%}
   {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
+    {% for category, message in messages if category != "toast" %}
       {% call alert(category, "mb-3") %}{{ message }}{% endcall %}
     {% endfor %}
   {% endwith %}
+{%- endmacro %}
+
+{# Brief confirmations ("Picked up: …"), flashed with category "toast". They sit
+   at the top of the screen, and js/toasts.js hides them after 3 seconds or
+   when dismissed. The live region announces them to screen readers. #}
+{% macro toasts() -%}
+  <div class="toast-region" role="status" aria-live="polite">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages if category == "toast" %}
+        <div class="app-toast">
+          {{ icon("check-circle-fill") }}
+          <span class="app-toast-text">{{ message }}</span>
+          <button type="button" class="app-toast-close" aria-label="Dismiss">{{ icon("x-lg") }}</button>
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
 {%- endmacro %}
 
 {# Status chip: kind is success, neutral, warning, or danger; label is the word #}

@@ -310,7 +310,7 @@ def test_check_in_goes_to_the_photo_page_and_skip_returns(client):
     response = client.get(f"/checkin/photo/{package.id}/skip")
     assert response.status_code == 302
     assert response.headers["Location"] == "/checkin"
-    assert "Checked in without a photo." in client.get("/checkin").get_data(as_text=True)
+    assert f"Checked in: …{UPS_TRACKING[-8:]}. No photo." in client.get("/checkin").get_data(as_text=True)
 
 
 # ---- Check-out page ----

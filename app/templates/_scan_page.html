@@ -1,0 +1,105 @@
+{# Shared layout for the two scan screens (checkin.html, checkout.html): a
+   full-screen camera under a translucent top bar, the scan frame, and a bottom
+   sheet for typing the number instead. Each page fills in:
+     title, page_id         <title> text and the <main> id
+     confirm_url            where scanner.js sends ?tracking=<scanned number>
+     reader_attrs           extra data- attributes for #reader
+     overlay                content above the camera (banners, warnings)
+     bottom_links           extra links under the instruction #}
+{% from "_macros.html" import alert, flash_messages, toasts %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#000000">
+  <title>{% block title %}{% endblock %} · Captain's Mail</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap-5.3.3/bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="scan-body">
+  <main id="{% block page_id %}{% endblock %}" class="scan-page" data-state="starting">
+    {# The camera fills the screen; everything else floats over it #}
+    <div id="viewfinder" class="scan-viewfinder">
+      <!-- html5-qrcode empties #reader on start/stop, so overlays live beside it -->
+      <div id="reader" data-confirm-url="{% block confirm_url %}{% endblock %}"
+           data-tracking-patterns="{{ tracking_patterns|tojson|forceescape }}"
+           {%- block reader_attrs %}{% endblock %}></div>
+      <div id="scan-frame" class="scan-frame" aria-hidden="true">
+        <span class="scan-corner scan-corner-tl"></span>
+        <span class="scan-corner scan-corner-tr"></span>
+        <span class="scan-corner scan-corner-bl"></span>
+        <span class="scan-corner scan-corner-br"></span>
+        <span class="scan-placeholder">Starting camera…</span>
+        <span class="scan-success">{{ icon("check-lg") }}</span>
+      </div>
+    </div>
+
+    <header class="scan-topbar">
+      <a href="{{ url_for('dashboard.dashboard') }}" class="scan-topbar-button" aria-label="Back to home">
+        {{ icon("chevron-left") }}
+      </a>
+      <h1 class="scan-topbar-title">{{ self.title() }}</h1>
+      {# scanner.js shows this only when the camera can switch its light on #}
+      <button type="button" id="torch-toggle" class="scan-topbar-button" aria-pressed="false" hidden>
+        {{ icon("lightning-charge-fill") }}<span class="visually-hidden">Flashlight</span>
+      </button>
+    </header>
+
+    {{ toasts() }}
+
+    <div class="scan-overlay">
+      {{ flash_messages() }}
+
+      {% block overlay %}{% endblock %}
+
+      {# Camera problems: scanner.js fills in the text and shows it #}
+      <div aria-live="assertive">
+        <div id="camera-error" hidden>
+          {% call alert("warning", "mb-3") %}
+            <p id="scan-message-title" class="fw-semibold mb-1"></p>
+            <p id="scan-message-body" class="mb-2"></p>
+            <button type="button" id="camera-retry" class="btn btn-secondary">Try again</button>
+          {% endcall %}
+        </div>
+      </div>
+    </div>
+
+    <div class="scan-bottom">
+      <p class="scan-instruction">Point at the shipping label barcode</p>
+      <button type="button" id="manual-entry-toggle" class="scan-bottom-link"
+              aria-haspopup="dialog" aria-controls="manual-entry-sheet" aria-expanded="false">Can't scan? Enter manually</button>
+      {% block bottom_links %}{% endblock %}
+    </div>
+
+    {# Bottom sheet for typing the number (manual_entry.js). A modal <dialog>
+       closes on Escape by itself; tapping outside closes it too. #}
+    <dialog id="manual-entry-sheet" class="sheet" aria-labelledby="manual-entry-title">
+      <div class="sheet-panel">
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-header">
+          <h2 id="manual-entry-title" class="sheet-title">Enter tracking number</h2>
+          <button type="button" id="manual-entry-close" class="sheet-close" aria-label="Close">{{ icon("x-lg") }}</button>
+        </div>
+        <form id="manual-entry" action="{{ self.confirm_url() }}" method="get">
+          <input type="hidden" name="source" value="manual">
+          <label for="manual-tracking" class="form-label">Tracking number</label>
+          <input type="text" class="form-control form-control-lg tracking-input mb-3" id="manual-tracking" name="tracking"
+                 autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
+                 enterkeyhint="go" required>
+          <button type="submit" class="btn btn-primary btn-lg w-100">Continue</button>
+        </form>
+      </div>
+    </dialog>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/toasts.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/html5-qrcode-2.3.8/html5-qrcode.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/scanner.js') }}"></script>
+  <!-- Separate from scanner.js so the manual fallback still works if the scanner fails to load -->
+  <script src="{{ url_for('static', filename='js/manual_entry.js') }}"></script>
+</body>
+</html>

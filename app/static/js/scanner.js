@@ -7,6 +7,12 @@
 //   data-expected-tracking  optional (check-out from a package's page): the
 //                           tracking number staff mean to scan, normalized. A
 //                           different label shows a warning instead of navigating.
+//
+// The page layout is _scan_page.html. Around the decoding (which this file's
+// settings below control) it adds: a green frame and a short vibration on a
+// good read, a flashlight button where the camera supports one, camera
+// problems as an inline alert with Try again, and pausing while the manual
+// entry sheet is open (manual_entry.js sends scanner:pause / scanner:resume).
 
 // ---- Supported barcode formats ----
 // CODE_128 is what UPS, FedEx, and USPS tracking barcodes use. DATA_MATRIX is
@@ -24,6 +30,9 @@ const SUPPORTED_FORMATS = [
 ];
 
 const SCAN_FPS = 10;
+
+// A good read shows the green frame this long before moving on
+const SUCCESS_MS = 300;
 
 // Shipping labels carry DataMatrix codes holding internal IDs as well as the
 // tracking number (Amazon prints three), so a DataMatrix only counts if it
@@ -51,6 +60,8 @@ const viewfinder = document.getElementById("viewfinder");
 const scanFrame = document.getElementById("scan-frame");
 const messageTitle = document.getElementById("scan-message-title");
 const messageBody = document.getElementById("scan-message-body");
+const cameraError = document.getElementById("camera-error");
+const torchButton = document.getElementById("torch-toggle");
 const expectedTracking = reader.dataset.expectedTracking || "";
 const mismatch = document.getElementById("scan-mismatch");
 
@@ -73,11 +84,67 @@ function setState(state) {
   page.dataset.state = state; // style.css shows/hides parts of the page per state
 }
 
+// Camera problems: an inline alert with a plain-language fix and Try again
 function showMessage(title, body) {
   messageTitle.textContent = title;
   messageBody.textContent = body;
+  cameraError.hidden = false;
+  torchButton.hidden = true;
   setState("error");
 }
+
+const secureCamera = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+
+document.getElementById("camera-retry").addEventListener("click", () => {
+  if (!secureCamera) {
+    window.location.reload(); // nothing to retry on this page until it's opened over HTTPS
+    return;
+  }
+  startScanning();
+});
+
+// ---- Flashlight ----
+// Only some phones (mostly Android Chrome) let a web page switch the light on.
+// The button stays hidden everywhere else.
+function torchFeature() {
+  try {
+    const torch = scanner.getRunningTrackCameraCapabilities().torchFeature();
+    return torch.isSupported() ? torch : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function setUpTorch() {
+  const torch = torchFeature();
+  torchButton.hidden = !torch;
+  torchButton.setAttribute("aria-pressed", String(Boolean(torch && torch.value())));
+}
+
+torchButton.addEventListener("click", () => {
+  const torch = torchFeature();
+  if (!torch) {
+    torchButton.hidden = true;
+    return;
+  }
+  const on = !torch.value();
+  torch
+    .apply(on)
+    .then(() => torchButton.setAttribute("aria-pressed", String(on)))
+    .catch((err) => {
+      console.error("Couldn't switch the flashlight:", err);
+      torchButton.hidden = true;
+    });
+});
+
+// ---- Manual entry sheet ----
+// Pausing stops decoding (and the video) behind the sheet; it resumes on close
+document.addEventListener("scanner:pause", () => {
+  if (scanner.getState() === Html5QrcodeScannerState.SCANNING) scanner.pause(true);
+});
+document.addEventListener("scanner:resume", () => {
+  if (scanner.getState() === Html5QrcodeScannerState.PAUSED) scanner.resume();
+});
 
 // The library sizes its <video> to #reader's width, then maps the scan box onto
 // the camera image using the video's unscaled clientWidth/clientHeight. A CSS
@@ -126,6 +193,7 @@ function stopScanning() {
 function startScanning() {
   handlingResult = false;
   videoSize = null;
+  cameraError.hidden = true;
   setState("starting");
 
   // Wide enough that a 4:3 camera image is at least as tall as the viewfinder,
@@ -150,7 +218,10 @@ function startScanning() {
         onScanSuccess,
       ),
     )
-    .then(() => setState("scanning"))
+    .then(() => {
+      setState("scanning");
+      setUpTorch();
+    })
     .catch(showCameraError);
 }
 
@@ -202,7 +273,15 @@ function onScanSuccess(decodedText, decodedResult) {
     stopScanning().then(() => showMismatch(decodedText));
     return;
   }
-  stopScanning().then(() => window.location.assign(confirmUrlFor(decodedText)));
+  showSuccess().then(stopScanning).then(() => window.location.assign(confirmUrlFor(decodedText)));
+}
+
+// A good read: green frame with a check, and a short buzz where phones allow it.
+// With reduced motion the frame still turns green; it just doesn't animate.
+function showSuccess() {
+  setState("success");
+  if (navigator.vibrate) navigator.vibrate(30);
+  return new Promise((resolve) => setTimeout(resolve, SUCCESS_MS));
 }
 
 function showCameraError(err) {
@@ -213,25 +292,24 @@ function showCameraError(err) {
   if (/NotAllowedError|PermissionDenied|SecurityError/.test(message)) {
     showMessage(
       "Camera access is blocked",
-      "Allow camera access for this site in your browser settings, then reload the page. " +
-        "Or enter the tracking number manually below.",
+      "Allow the camera for this site in your browser's settings, then tap Try again. " +
+        "Or tap “Can't scan? Enter manually” below.",
     );
   } else if (/NotFoundError|DevicesNotFound|OverconstrainedError/.test(message)) {
     showMessage(
       "No camera found",
-      "This device doesn't have a camera the browser can use. " +
-        "Enter the tracking number manually below.",
+      "This device has no camera the browser can use. " +
+        "Tap “Can't scan? Enter manually” below to type the number.",
     );
   } else if (/NotReadableError|TrackStartError/.test(message)) {
     showMessage(
       "Camera is in use",
-      "Another app or tab may be using the camera. Close it, then reload this page. " +
-        "Or enter the tracking number manually below.",
+      "Close any other app or tab that's using the camera, then tap Try again.",
     );
   } else {
     showMessage(
       "Couldn't start the camera",
-      "Reload the page to try again, or enter the tracking number manually below.",
+      "Tap Try again. If it keeps failing, tap “Can't scan? Enter manually” below.",
     );
   }
 }
@@ -249,12 +327,12 @@ window.addEventListener("pageshow", (event) => {
 });
 
 // Browsers only expose the camera on secure origins (HTTPS or localhost)
-if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+if (secureCamera) {
   startScanning();
 } else {
   showMessage(
     "Camera needs a secure connection",
-    "Browsers only allow camera access over HTTPS or on localhost. " +
-      "Enter the tracking number manually below.",
+    "Open this site with an https:// address to use the camera. " +
+      "Until then, tap “Can't scan? Enter manually” below.",
   );
 }

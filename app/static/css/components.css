@@ -523,6 +523,248 @@ a.inset-row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--bs-
   box-shadow: 0 0 0 2px var(--bs-focus-ring-color);
 }
 
+/* ---- Field rows: a label above its field, inside an inset list ----
+   <div class="inset-list">
+     <div class="inset-row inset-field">
+       <label class="inset-field-label" for="x">Label</label>
+       <input class="inset-field-input" id="x">
+       <p class="field-error">…</p>   (only when the server found a problem)
+     </div>
+   </div>  */
+.inset-field {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.inset-field-label {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-footnote);
+  font-weight: var(--weight-semibold);
+}
+
+.inset-field-input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-body);
+}
+
+textarea.inset-field-input {
+  padding: var(--space-2) 0;
+  resize: vertical;
+}
+
+.inset-field-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 1;
+}
+
+.inset-field-input:focus {
+  outline: none;
+}
+
+/* A native select at the end of a row: tapping it opens the phone's picker */
+.inset-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--touch-target);
+  border: 0;
+  background: transparent;
+  color: var(--color-brand-text);
+  font-size: var(--text-body);
+  text-align: right;
+  text-align-last: right;
+}
+
+.inset-select:focus {
+  outline: none;
+}
+
+/* A field with a problem: red bar, and the message (with an icon) below it */
+.inset-row[data-invalid],
+.inset-field:has(.inset-field-input:user-invalid),
+.inset-row:has(.inset-select:user-invalid) {
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+.field-error,
+.inset-field .invalid-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-1) 0 0;
+  color: var(--color-danger);
+  font-size: var(--text-footnote);
+}
+
+.field-error .icon {
+  flex: 0 0 auto;
+  margin-top: 0.15em;
+}
+
+/* Browser checks: shown once staff have edited the field, not on page load */
+.inset-field .invalid-feedback { display: none; }
+.inset-field-input:user-invalid ~ .invalid-feedback { display: flex; }
+
+/* ---- Action bar: the screen's main button, fixed above the home indicator ----
+   Put it inside .page-content; the content gets room so nothing hides behind it. */
+.action-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  padding: var(--space-3) calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--space-3) + env(safe-area-inset-bottom)) calc(var(--space-4) + env(safe-area-inset-left));
+  background-color: var(--color-surface-translucent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: 0 -0.5px 0 var(--color-separator);
+}
+
+.action-bar-inner {
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  text-align: center;
+}
+
+.page-content:has(.action-bar) {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}
+
+/* ---- Toasts: brief confirmations at the top (toasts() in _macros.html) ---- */
+.toast-region {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + var(--space-2));
+  right: calc(var(--space-3) + env(safe-area-inset-right));
+  left: calc(var(--space-3) + env(safe-area-inset-left));
+  z-index: 40;
+  display: grid;
+  gap: var(--space-2);
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  pointer-events: none; /* only the toasts themselves take taps */
+}
+
+.app-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-raised), 0 0 0 0.5px var(--color-separator);
+  pointer-events: auto;
+  animation: toast-in var(--duration-base) var(--easing-standard);
+}
+
+.app-toast > .icon {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-success);
+}
+
+.app-toast-text {
+  flex: 1 1 auto;
+}
+
+.app-toast-close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-text-secondary);
+}
+
+.app-toast-close:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: -2px;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-0.5rem); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- Bottom sheet: a modal <dialog> rising from the bottom ---- */
+.sheet {
+  width: 100%;
+  max-width: var(--content-max-width);
+  max-height: 100dvh;
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text);
+}
+
+.sheet::backdrop {
+  background-color: var(--color-scrim);
+}
+
+.sheet-panel {
+  padding: var(--space-2) calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--space-6) + env(safe-area-inset-bottom)) calc(var(--space-4) + env(safe-area-inset-left));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background-color: var(--color-surface);
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 5px;
+  margin: 0 auto var(--space-2);
+  border-radius: var(--radius-pill);
+  background-color: var(--color-silver);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.sheet-title {
+  margin: 0;
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-semibold);
+}
+
+.sheet-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-neutral-bg);
+  color: var(--color-text);
+}
+
+.sheet-close:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+}
+
 /* ---- Status chips: color + icon + word ---- */
 .status-chip {
   display: inline-flex;

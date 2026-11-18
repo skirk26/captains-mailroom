@@ -8,60 +8,24 @@
   color: var(--color-silver);
 }
 
-/* App pages (header + content) */
-.page-shell {
+/* ---- Scan screens (_scan_page.html) ----
+   The camera fills the screen; the top bar, alerts, and bottom panel float
+   over it. data-state on .scan-page (set by scanner.js): starting, scanning,
+   success (good read), paused (wrong package), error (camera problem). */
+.scan-body {
+  background-color: var(--color-viewfinder);
+}
+
+.scan-page {
+  position: relative;
   min-height: 100vh;
   min-height: 100dvh;
 }
 
-/* Scan and confirm pages keep their own header markup for now; it gets the
-   nav bar's look (see .nav-bar in components.css) */
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  min-height: var(--nav-bar-height);
-  flex-shrink: 0;
-  background-color: var(--color-surface-translucent);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  box-shadow: 0 0.5px 0 var(--color-separator);
-  color: var(--color-text);
-}
-
-.app-header h1 {
-  color: var(--color-text);
-  font-size: var(--text-headline);
-}
-
-.header-back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--touch-target);
-  height: var(--touch-target);
-  color: var(--color-brand-text);
-  border-radius: var(--radius-sm);
-}
-
-.header-back .icon {
-  width: 1.375rem;
-  height: 1.375rem;
-}
-
-.header-back:hover,
-.header-back:focus-visible {
-  color: var(--color-brand-text);
-  background-color: var(--color-brand-tint);
-}
-
-/* Check-in page */
 .scan-viewfinder {
-  position: relative;
-  min-height: 60vh;
-  min-height: 60dvh;
+  position: fixed;
+  inset: 0;
   background-color: var(--color-viewfinder);
-  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
@@ -95,6 +59,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--radius-lg);
+  transition: background-color var(--duration-fast) var(--easing-standard);
 }
 
 .scan-corner {
@@ -102,44 +68,171 @@
   width: 32px;
   height: 32px;
   border: 0 solid var(--color-viewfinder-mark);
+  transition: border-color var(--duration-fast) var(--easing-standard);
 }
 
-.scan-corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
-.scan-corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 8px; }
-.scan-corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 8px; }
-.scan-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
+.scan-corner-tl { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 14px; }
+.scan-corner-tr { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 14px; }
+.scan-corner-bl { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 14px; }
+.scan-corner-br { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 14px; }
 
 .scan-placeholder {
   color: var(--color-viewfinder-dim-text);
   font-size: var(--text-footnote);
 }
 
-.scan-message {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
+/* Good read: green corners and a check, then scanner.js moves on */
+.scan-success {
   display: none;
-  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: var(--space-6);
-  color: var(--color-viewfinder-text);
-  text-align: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-scan-success);
+  color: var(--color-viewfinder);
 }
 
-/* Page states, set by scanner.js via data-state on the scan page's <main>:
-   starting, scanning, error, and paused (camera stopped after scanning the
-   wrong package; the warning above the viewfinder explains) */
+.scan-success .icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+[data-state="success"] .scan-corner { border-color: var(--color-scan-success); }
+[data-state="success"] .scan-success { display: flex; }
+
 [data-state="scanning"] .scan-placeholder,
+[data-state="success"] .scan-placeholder,
+[data-state="paused"] .scan-placeholder,
 [data-state="error"] .scan-frame {
   display: none;
 }
 
-[data-state="error"] .scan-message {
-  display: flex;
+/* Top bar: back, title, flashlight */
+.scan-topbar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: var(--touch-target) 1fr var(--touch-target);
+  align-items: center;
+  gap: var(--space-2);
+  padding: env(safe-area-inset-top) calc(var(--space-2) + env(safe-area-inset-right)) 0
+    calc(var(--space-2) + env(safe-area-inset-left));
+  min-height: calc(var(--nav-bar-height) + env(safe-area-inset-top));
+  background-color: var(--color-scan-bar);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  color: var(--color-viewfinder-text);
 }
 
-[data-state="error"] .scan-instruction {
+.scan-topbar-title {
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+  color: var(--color-viewfinder-text);
+}
+
+.scan-topbar-button {
+  grid-column: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-viewfinder-text);
+}
+
+.scan-topbar-button:hover { color: var(--color-viewfinder-text); }
+.scan-topbar-button .icon { width: 1.375rem; height: 1.375rem; }
+.scan-topbar-button:focus-visible { outline: 2px solid var(--color-viewfinder-mark); outline-offset: -2px; }
+.scan-topbar > :last-child { grid-column: 3; }
+
+/* Flashlight on: filled light, like iOS */
+#torch-toggle[aria-pressed="true"] {
+  background-color: var(--color-viewfinder-mark);
+  color: var(--color-viewfinder);
+}
+
+/* Alerts and banners under the top bar */
+.scan-overlay {
+  position: relative;
+  z-index: 10;
+  padding: calc(var(--nav-bar-height) + env(safe-area-inset-top) + var(--space-3))
+    calc(var(--space-3) + env(safe-area-inset-right)) 0 calc(var(--space-3) + env(safe-area-inset-left));
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+}
+
+.scan-overlay .alert {
+  box-shadow: var(--shadow-raised);
+}
+
+/* Bottom panel: instruction and the typed-number fallback */
+.scan-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-3) calc(var(--space-4) + env(safe-area-inset-right))
+    calc(var(--space-4) + env(safe-area-inset-bottom)) calc(var(--space-4) + env(safe-area-inset-left));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background-color: var(--color-surface);
+  text-align: center;
+}
+
+.scan-instruction {
+  margin: 0;
+  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+}
+
+[data-state="error"] .scan-instruction,
+[data-state="paused"] .scan-instruction {
   display: none;
+}
+
+/* "Can't scan?" opens the sheet: a button styled like a link, full 44px tall */
+.scan-bottom-link,
+.scan-bottom .app-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-brand-text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.scan-bottom-link:focus-visible {
+  outline: 2px solid var(--color-brand-text);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Check-out scan opened from a package's Check Out button */
+.expected-banner {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+  box-shadow: var(--shadow-raised);
 }
 
 /* Check-in confirm page */
@@ -172,18 +265,17 @@
   position: relative;
 }
 
-.row.suggest-anchor {
-  --suggest-inset: calc(var(--bs-gutter-x) * 0.5); /* line up with the columns, not the row's gutters */
-}
-
 .suggest-list {
   position: absolute;
   z-index: 10;
-  left: var(--suggest-inset, 0);
-  right: var(--suggest-inset, 0);
+  top: 100%;
+  left: var(--space-2);
+  right: var(--space-2);
   margin-top: var(--space-1);
   max-height: 50vh;
   overflow-y: auto;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
   box-shadow: var(--shadow-raised), 0 0 0 0.5px var(--color-separator);
 }
 
@@ -191,6 +283,16 @@
   min-height: 48px; /* comfortable thumb target */
   display: flex;
   align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  border-top: 0.5px solid var(--color-separator);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-body);
+}
+
+.suggest-list .list-group-item:first-child {
+  border-top: 0;
 }
 
 .suggest-list .list-group-item.is-highlighted {
@@ -198,26 +300,30 @@
   box-shadow: inset 4px 0 0 var(--color-brand);
 }
 
-/* Check-out confirm page */
-.package-card {
-  box-shadow: var(--shadow-raised);
+/* Confirm pages: a header card for the package, grouped field rows, and a
+   sticky action bar (see .action-bar in components.css) */
+.confirm-header {
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
 }
 
-.package-details {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  column-gap: var(--space-4);
-  row-gap: var(--space-2);
-}
-
-.package-details dt {
-  font-weight: var(--weight-regular);
+.confirm-header-label {
+  display: block;
+  margin: var(--space-3) 0 var(--space-1);
   color: var(--color-text-secondary);
+  font-size: var(--text-footnote);
+  font-weight: var(--weight-semibold);
 }
 
-.package-details dd {
+.confirm-tracking {
   margin: 0;
-  overflow-wrap: anywhere; /* long notes or names must not overflow on phones */
+  font-family: var(--font-family-mono);
+  font-size: var(--text-title-3);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
 }
 
 .package-notes {
@@ -507,14 +613,6 @@ a.search-result {
   white-space: pre-line;
 }
 
-/* Check-out scan page opened from a package's Check Out button */
-.expected-banner {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-info-bg);
-  color: var(--color-info);
-}
-
 /* Home screen */
 .home-search {
   display: flex;
@@ -634,4 +732,22 @@ a.activity-row {
   height: 2.5rem;
   margin-bottom: var(--space-3);
   color: var(--color-silver);
+}
+
+/* Confirm Check-In: the recipient group lets autofill suggestions float over
+   the rows below it, and a tracking-number problem marks the header card */
+.inset-list-open {
+  overflow: visible;
+}
+
+.confirm-header.is-invalid {
+  box-shadow: inset 4px 0 0 var(--color-danger);
+}
+
+/* Storage-photo screen: "Skip for now" under the main button, 44px tall */
+.photo-skip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--touch-target);
 }

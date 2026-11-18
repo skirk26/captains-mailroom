@@ -138,5 +138,6 @@ def mark_picked_up(package, tracking):
         db.session.refresh(package)
         return render_confirm(package, tracking)
 
-    flash(f"Package {tracking} marked as picked up", "success")
+    # Back to the scanner, ready for the next package
+    flash(f"Picked up: …{tracking[-8:]}.", "toast")
     return redirect(url_for("checkout.checkout"))

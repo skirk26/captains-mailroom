@@ -150,7 +150,7 @@ def test_round_trip_check_in_then_check_out(client):
     response = check_out(client, student_id="00912345")
     assert response.status_code == 302
     flashed = client.get("/checkout").get_data(as_text=True)
-    assert f"Package {UPS_TRACKING} marked as picked up" in flashed
+    assert f"Picked up: …{UPS_TRACKING[-8:]}." in flashed  # toast on the scanner
 
     package = get_package()
     assert package.status == "checked_out"
@@ -262,7 +262,7 @@ def test_scan_page_without_expect_is_unchanged(client):
     check_in(client)
     html = scan_page(client)
     assert_plain_scan_page(html)
-    assert "Can't scan? Enter tracking number manually" in html
+    assert "Can't scan? Enter manually" in html
     assert 'data-tracking-patterns="' in html and "js/scanner.js" in html
 
 

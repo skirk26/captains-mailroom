@@ -500,8 +500,8 @@ def test_pickup_success_message_shows_on_scanner_page(client):
     post_checkin(client, box_number="1815")
     post_pickup(client)
     html = client.get("/checkout").get_data(as_text=True)
-    assert f"Package {UPS_TRACKING} marked as picked up" in html
-    assert "alert-success" in html
+    assert f"Picked up: …{UPS_TRACKING[-8:]}." in html
+    assert 'class="app-toast"' in html  # a toast now, not an alert
 
 
 def test_pickup_without_student_id_saves_none(client):
@@ -637,7 +637,7 @@ def test_photo_page_skip_link(client):
     response = client.get(f"/checkin/photo/{package.id}/skip")
     assert response.status_code == 302
     assert response.headers["Location"] == "/checkin"
-    assert "Checked in without a photo." in client.get("/checkin").get_data(as_text=True)
+    assert f"Checked in: …{UPS_TRACKING[-8:]}. No photo." in client.get("/checkin").get_data(as_text=True)
 
 
 def test_photo_page_shows_existing_photo(app, client, tmp_path):

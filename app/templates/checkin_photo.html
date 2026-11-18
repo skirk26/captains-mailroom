@@ -63,24 +63,28 @@
     <input type="file" id="photo-input" class="visually-hidden" accept="image/*" capture="environment"
            tabindex="-1" aria-hidden="true">
 
-    <div class="photo-actions-empty">
-      <button type="button" class="btn btn-primary btn-lg w-100 photo-take" aria-controls="photo-input">
-        {{ icon("camera-fill") }}<span>Take Photo</span>
-      </button>
-    </div>
+    {# Sticky at the bottom, in thumb reach. Inside the section so the
+       data-state rules in style.css still show the right buttons. #}
+    <div class="action-bar">
+      <div class="action-bar-inner">
+        <div class="photo-actions-empty">
+          <button type="button" class="btn btn-primary btn-lg w-100 photo-take" aria-controls="photo-input">
+            {{ icon("camera-fill") }}<span>Take Photo</span>
+          </button>
+        </div>
 
-    <div class="photo-actions-review">
-      {# Uploads the shrunken photo; becomes "Try Again" if the upload fails #}
-      <button type="button" id="photo-use" class="btn btn-primary btn-lg"><span>Use Photo</span></button>
-      <button type="button" class="btn btn-secondary btn-lg photo-take" aria-controls="photo-input">
-        {{ icon("arrow-counterclockwise") }}<span>Retake</span>
-      </button>
+        <div class="photo-actions-review">
+          {# Uploads the shrunken photo; becomes "Try Again" if the upload fails #}
+          <button type="button" id="photo-use" class="btn btn-primary btn-lg"><span>Use Photo</span></button>
+          <button type="button" class="btn btn-secondary btn-lg photo-take" aria-controls="photo-input">
+            {{ icon("arrow-counterclockwise") }}<span>Retake</span>
+          </button>
+        </div>
+
+        <a href="{{ url_for('checkin.skip_photo', package_id=package.id) }}" class="app-link photo-skip">Skip for now</a>
+      </div>
     </div>
   </section>
-
-  <p class="text-center mt-3 mb-0">
-    <a href="{{ url_for('checkin.skip_photo', package_id=package.id) }}" class="app-link">Skip for now</a>
-  </p>
 {% endblock %}
 
 {% block scripts %}

@@ -1,18 +1,30 @@
-// "Can't scan?" fallback on the check-in page: reveals a tracking number form
-// that goes to the same confirm page as a successful scan.
+// "Can't scan?" fallback on the scan screens: a bottom sheet with a tracking
+// number field that goes to the same confirm page as a successful scan.
+// While it's open the camera pauses (scanner.js listens for scanner:pause and
+// scanner:resume), so nothing is decoded behind the sheet.
 
+const sheet = document.getElementById("manual-entry-sheet");
 const manualToggle = document.getElementById("manual-entry-toggle");
 const manualForm = document.getElementById("manual-entry");
 const manualInput = document.getElementById("manual-tracking");
 
-manualToggle.addEventListener("click", (event) => {
-  event.preventDefault();
-  manualForm.hidden = !manualForm.hidden;
-  manualToggle.setAttribute("aria-expanded", String(!manualForm.hidden));
-  if (!manualForm.hidden) {
-    manualInput.focus();
-    manualForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
+manualToggle.addEventListener("click", () => {
+  sheet.showModal();
+  manualToggle.setAttribute("aria-expanded", "true");
+  document.dispatchEvent(new Event("scanner:pause"));
+  manualInput.focus();
+});
+
+document.getElementById("manual-entry-close").addEventListener("click", () => sheet.close());
+
+// Tapping the dimmed area outside the panel closes it; Escape is handled by <dialog>
+sheet.addEventListener("click", (event) => {
+  if (event.target === sheet) sheet.close();
+});
+
+sheet.addEventListener("close", () => {
+  manualToggle.setAttribute("aria-expanded", "false");
+  document.dispatchEvent(new Event("scanner:resume"));
 });
 
 manualForm.addEventListener("submit", (event) => {
