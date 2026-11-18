@@ -321,7 +321,7 @@ def test_tab_bar_is_hidden_when_signed_out(app):
 def test_account_screen(client):
     page = client.get("/account").get_data(as_text=True)
 
-    assert '<h2 class="large-title mb-4">Account</h2>' in page
+    assert '<h1 class="large-title mb-4">Account</h1>' in page
     assert re.search(r'<dt class="inset-label">Name</dt>\s*<dd class="inset-value">tester</dd>', page)
     form = re.search(r'<form method="post" action="/logout">(.*?)</form>', page, re.S).group(1)
     assert 'name="csrf_token"' in form and "Sign out" in form

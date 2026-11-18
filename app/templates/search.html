@@ -13,7 +13,8 @@
 {%- endmacro %}
 
 {% block content %}
-  <h2 class="large-title mb-3">Search</h2>
+  {# No nav bar on this screen, so the large title is the page's one <h1> #}
+  <h1 class="large-title mb-3">Search</h1>
 
   <form method="get" action="{{ url_for('search.search') }}" class="search-form mb-3" role="search">
     <label for="search-q" class="form-label">Tracking number, name, or box number</label>
