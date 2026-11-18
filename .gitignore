@@ -7,3 +7,6 @@ __pycache__/
 *.db
 app/static/uploads/*
 !app/static/uploads/.gitkeep
+
+# Screen audit output (scripts/audit_screens.py)
+audit-screenshots/

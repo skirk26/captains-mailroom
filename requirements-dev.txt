@@ -1,0 +1,6 @@
+# Development-only tools. Install with: pip install -r requirements-dev.txt
+# then, once: python -m playwright install chromium
+-r requirements.txt
+pytest
+playwright
+axe-playwright-python
