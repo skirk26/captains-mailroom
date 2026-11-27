@@ -240,11 +240,11 @@ The file also contains these helper functions:
 
 ### `app/routes/checkout.py`
 
-A placeholder for package check-out routes. It doesn't contain any code yet.
+Handles checking packages out: the scan page (`/checkout`), the confirmation page and the POST that marks a package picked up (`/checkout/confirm`). Staff can record the last 4 digits of the student ID.
 
 ### `app/routes/search.py`
 
-A placeholder for package search routes. It doesn't contain any code yet.
+Handles package search (`/search`) by tracking number, recipient name or box number with a status filter, and each package's detail page (`/packages/<id>`).
 
 ## Templates
 
