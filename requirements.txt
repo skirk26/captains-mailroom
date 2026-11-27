@@ -1,8 +1,8 @@
-Flask
-Flask-SQLAlchemy
-Flask-Login
-python-dotenv
-Flask-WTF
-Flask-Limiter
-Pillow
-tzdata  # time zone data for zoneinfo; Windows doesn't include it
+Flask==3.1.3
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+python-dotenv==1.2.3
+Flask-WTF==1.3.0
+Flask-Limiter==4.1.1
+Pillow==13.0.0
+tzdata==2026.6  # time zone data for zoneinfo; Windows doesn't include it
