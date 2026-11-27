@@ -325,8 +325,9 @@ def test_account_screen(client):
     assert re.search(r'<dt class="inset-label">Name</dt>\s*<dd class="inset-value">tester</dd>', page)
     form = re.search(r'<form method="post" action="/logout">(.*?)</form>', page, re.S).group(1)
     assert 'name="csrf_token"' in form and "Sign out" in form
-    assert "Role" not in page            # Staff has no role column
-    assert "Change password" not in page  # no such page yet
+    assert re.search(r'<dt class="inset-label">Role</dt>\s*<dd class="inset-value">Staff</dd>', page)
+    assert 'href="/account/password"' in page and "Change password" in page
+    assert "Manage staff" not in page     # admins only; tests/test_accounts.py covers it
 
 
 def test_account_sign_out_works(client):

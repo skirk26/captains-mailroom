@@ -275,6 +275,7 @@ Apple's SF Symbols aren't used.
 | Sign in, error pages | Extend `base.html` and use the components above (no tab bar) |
 | Home (`/dashboard`) | Extends `base.html` with the tab bar: search field, Check In / Check Out tiles, Today counts, and recent activity |
 | Account | Extends `base.html` with the tab bar: the staff member's name and Sign out |
+| Account, Manage Staff, Change Password | Extend `base.html` with the Account tab. Manage Staff (admins only) gives each person an inset group: name, status chips (role, Active/Deactivated, Locked), last sign-in, and 44px action buttons, each its own POST form |
 | Search (Find tab) | Extends `base.html` with the tab bar: a search field, a segmented status filter, and result rows that link to the package (64px thumbnail, details, status chip) |
 | Package detail | Extends `base.html` with the tab bar (Find stays current): the storage card and photo viewer from `_package.html`, a status chip, and inset detail rows |
 | Storage photo (after check-in) | Extends `base.html`: a package card, the photo frame, and Take Photo / Retake / Use Photo |

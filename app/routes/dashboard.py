@@ -111,6 +111,4 @@ def dashboard():
 @dashboard_bp.route("/account")
 @login_required
 def account():
-    # Staff has no role column and there's no change-password page yet,
-    # so the screen shows the name and Sign out only
     return render_template("account.html", staff=current_user)

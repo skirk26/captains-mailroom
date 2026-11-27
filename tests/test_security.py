@@ -385,7 +385,9 @@ def test_login_limit_resets_after_a_minute(monkeypatch):
     app = make_app(WTF_CSRF_ENABLED=False)
     client = app.test_client()
     for _ in range(6):
-        post_login(client)
+        # An unknown name: failures on a real account would also lock it
+        # (tests/test_accounts.py), and this test is only about the IP limit
+        post_login(client, username="nobody")
     move_clock_forward(monkeypatch, 1.1)
     assert post_login(client, password=PASSWORD).status_code == 302
 
@@ -394,7 +396,7 @@ def test_login_limit_is_per_ip():
     app = make_app(WTF_CSRF_ENABLED=False)
     client = app.test_client()
     for _ in range(6):
-        post_login(client)
+        post_login(client, username="nobody")  # unknown name, so no account gets locked
     other = app.test_client()
     response = other.post("/login", data={"username": "tester", "password": PASSWORD},
                           environ_base={"REMOTE_ADDR": "10.0.0.2"})

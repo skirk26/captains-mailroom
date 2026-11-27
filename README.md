@@ -23,6 +23,9 @@ SQLite, Pillow, Jinja2 + Bootstrap, html5-qrcode for in-browser barcode scanning
 - **Search:** find packages by tracking number (the last few digits are
   enough), recipient name, or box number, filtered by status. Each result has
   a thumbnail and opens a detail page with the full photo and history.
+- **Accounts:** staff and admin roles, an admin-only Manage Staff page
+  (create, deactivate, unlock, promote, reset passwords), a Change Password
+  page, password rules, and a 15-minute lockout after 5 wrong passwords.
 - **Security:** staff sign-in, CSRF protection, session timeouts, security
   headers and a strict Content Security Policy, rate limits on sign-in and
   search, and friendly error pages. All libraries are served from this site.
@@ -51,13 +54,44 @@ copy .env.example .env         # then set a real SECRET_KEY in .env
 
 Staff are signed out after 30 minutes of inactivity, or 12 hours after signing in.
 
-## Create a staff account
+## Accounts
+
+Create the first admin from the command line, then add everyone else on the
+Manage Staff page (Account → Manage staff):
 
 ```bash
-flask --app run create-staff <username>
+flask --app run create-user <username> --admin   # an admin
+flask --app run create-user <username>           # ordinary staff
 ```
 
-You'll be prompted for the password (typed twice, hidden).
+You'll be prompted for the password (typed twice, hidden). Passwords need at
+least 12 characters, can't be one of about 100 common passwords, and can't
+contain the username. There are no symbol or digit requirements. (`create-staff`
+still works as the old name for `create-user`.)
+
+On Manage Staff, admins create accounts, deactivate and reactivate them, unlock
+locked ones, promote and demote, and reset passwords. A new or reset account
+gets a random temporary password, shown once; the person must choose their own
+at first sign-in. You can't demote or deactivate yourself, and the last active
+admin can never be removed. After 5 wrong passwords in a row an account locks
+for 15 minutes (an admin can unlock it sooner). Every sign-in failure shows the
+same message, so the page doesn't reveal which usernames exist.
+
+### When the models change: reset the local database
+
+`db.create_all()` only creates missing tables; it never adds a column to a
+table that already exists. After pulling a change to `app/models.py` (this
+one added columns to `Staff`), reset the local database:
+
+```bash
+flask --app run reset-db
+flask --app run create-user <username> --admin
+```
+
+`reset-db` shows which database it will erase and asks you to confirm. It
+**deletes every account and package record**; photos in `instance/uploads/` are
+not touched. If you want to keep the old data, copy `instance/captains_mail.db`
+somewhere safe first. Use `--yes` to skip the question.
 
 ## Run
 

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% from "_macros.html" import nav_back, status_chip %}
+{% from "_package.html" import local_time %}
+{# Reached from the Account screen, so that tab stays current #}
+{% set tab = "account" %}
+
+{% block title %}Manage Staff{% endblock %}
+{% block nav_leading %}{{ nav_back(url_for('dashboard.account'), "Account") }}{% endblock %}
+{% block nav_title %}Manage Staff{% endblock %}
+
+{# One small POST form per action; each carries its own CSRF token #}
+{% macro action(endpoint, staff_id, label, style="secondary") %}
+  <form method="post" action="{{ url_for(endpoint, staff_id=staff_id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-{{ style }}">{{ label }}</button>
+  </form>
+{% endmacro %}
+
+{% block content %}
+  {% if notice %}
+    <section class="inset-section" aria-labelledby="temp-heading">
+      <h2 class="inset-header" id="temp-heading">{{ notice.heading }}: {{ notice.username }}</h2>
+      <div class="inset-list">
+        <div class="inset-row">
+          <span class="inset-label">Temporary password</span>
+          <span class="inset-value mono temp-password">{{ notice.password }}</span>
+        </div>
+      </div>
+      <p class="inset-footer">
+        Shown only once. Give it to {{ notice.username }} in person; they will be asked to choose a
+        new password when they sign in.
+      </p>
+    </section>
+  {% endif %}
+
+  <h2 class="inset-header">Staff ({{ members | length }})</h2>
+  {% for member in members %}
+    {% set is_me = member.id == current_user.id %}
+    <div class="inset-section staff-card">
+      <div class="inset-list">
+        <div class="inset-row staff-summary">
+          <span class="staff-name">{{ member.username }}{% if is_me %} (you){% endif %}</span>
+          <span class="staff-chips">
+            {% call status_chip("neutral", "person-circle") %}{{ member.role }}{% endcall %}
+            {% if member.is_active %}
+              {% call status_chip("success", "check-circle-fill") %}Active{% endcall %}
+            {% else %}
+              {% call status_chip("neutral", "x-lg") %}Deactivated{% endcall %}
+            {% endif %}
+            {% if member.is_locked %}
+              {% call status_chip("warning", "exclamation-triangle-fill") %}Locked{% endcall %}
+            {% endif %}
+            {% if member.must_change_password %}
+              {% call status_chip("neutral", "info-circle-fill") %}Must change password{% endcall %}
+            {% endif %}
+          </span>
+          <span class="footnote text-secondary-label">
+            Last sign-in:
+            {% if member.last_login_at %}{{ local_time(member.last_login_at) }}{% else %}Never{% endif %}
+          </span>
+        </div>
+        <div class="inset-row staff-actions">
+          {% if member.is_locked %}{{ action("admin.unlock", member.id, "Unlock") }}{% endif %}
+          {% if not is_me %}
+            {% if member.is_admin %}
+              {% if member.id != last_admin_id %}{{ action("admin.demote", member.id, "Make staff") }}{% endif %}
+            {% else %}
+              {{ action("admin.promote", member.id, "Make admin") }}
+            {% endif %}
+            {{ action("admin.reset_password", member.id, "Reset password") }}
+            {% if not member.is_active %}
+              {{ action("admin.reactivate", member.id, "Reactivate") }}
+            {% elif member.id != last_admin_id %}
+              {{ action("admin.deactivate", member.id, "Deactivate", "destructive") }}
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('admin.create_staff') }}" class="mt-4" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="inset-section">
+      <h2 class="inset-header">New account</h2>
+      <div class="inset-list">
+        <div class="inset-row inset-field">
+          <label class="inset-field-label" for="new-username">Username</label>
+          <input type="text" class="inset-field-input" id="new-username" name="username"
+                 autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false"
+                 aria-describedby="new-account-help" required>
+        </div>
+        <div class="inset-row">
+          <label class="inset-label" for="new-role">Role</label>
+          <select class="inset-select" id="new-role" name="role">
+            <option value="staff">Staff</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <p class="inset-footer" id="new-account-help">
+        A temporary password is made for you and shown once. They choose their own at first sign-in.
+      </p>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg w-100">Create Account</button>
+  </form>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='js/local_time.js') }}"></script>{% endblock %}

@@ -87,6 +87,7 @@ def create_app(test_config=None):
     limiter.init_app(app)
 
     register_session_timeouts(app)
+    register_account_state_checks(app)
     register_csrf_error_handler(app)
 
     from app.routes.errors import register_error_pages
@@ -105,6 +106,7 @@ def create_app(test_config=None):
     with app.app_context():
         db.create_all()
 
+    from app.routes.admin import admin_bp
     from app.routes.auth import bp as auth_bp
     from app.routes.checkin import checkin_bp
     from app.routes.checkout import checkout_bp
@@ -113,15 +115,18 @@ def create_app(test_config=None):
     from app.routes.search import search_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(admin_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(checkin_bp)
     app.register_blueprint(checkout_bp)
     app.register_blueprint(photos_bp)
     app.register_blueprint(search_bp)
 
-    from app.cli import create_staff
+    from app.cli import create_user, reset_db
 
-    app.cli.add_command(create_staff)
+    app.cli.add_command(create_user)
+    app.cli.add_command(create_user, "create-staff")  # the command's old name
+    app.cli.add_command(reset_db)
 
     return app
 
@@ -174,6 +179,34 @@ def register_session_timeouts(app):
             session.clear()
             flash("Your session has expired. Please sign in again.", "warning")
             return redirect(url_for("auth.login", next=request.full_path if request.method == "GET" else None))
+        return None
+
+
+# Pages a signed-in user may still open while they must pick a new password
+PASSWORD_CHANGE_ENDPOINTS = {"auth.change_password", "auth.logout", "static"}
+
+
+def register_account_state_checks(app):
+    @app.before_request
+    def enforce_account_state():
+        from app.models import Staff
+
+        # Flask-Login treats an inactive user as not authenticated, so look at the
+        # loaded user itself. Checked on every request, so deactivating someone
+        # ends the session they already have open, not just future sign-ins.
+        user = current_user._get_current_object()
+        if isinstance(user, Staff) and not user.is_active:
+            logout_user()
+            session.clear()
+            flash("Your session has ended. Please sign in again.", "warning")
+            return redirect(url_for("auth.login"))
+
+        if (
+            current_user.is_authenticated
+            and current_user.must_change_password
+            and request.endpoint not in PASSWORD_CHANGE_ENDPOINTS
+        ):
+            return redirect(url_for("auth.change_password"))
         return None
 
 

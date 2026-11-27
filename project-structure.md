@@ -131,7 +131,7 @@ Builds and configures the Flask app. It defines the following:
 *   `create_app(test_config=None)`: the app factory. It loads settings from
     `.env`, stores the SQLite database at `instance/captains_mail.db`, limits
     uploads to 16 MB, creates any missing tables, registers the route
-    blueprints, and adds the `create-staff` command.
+    blueprints, and adds the `create-user` and `reset-db` commands.
 
 Tests pass `test_config` to use a temporary in-memory database instead of your
 real one.
@@ -141,14 +141,26 @@ After you change a model, reset your local database so the new columns appear.
 
 ### `app/cli.py`
 
-Defines the `create-staff` command, which adds a staff account. The command
-prompts for the password twice and hides what you type:
+Defines two commands. `create-user` adds a staff account (`--admin` makes it an
+admin). It prompts for the password twice, hides what you type, and applies
+the password rules in `app/passwords.py`:
 
 ```bash
-venv\Scripts\python.exe -m flask --app run create-staff USERNAME
+venv\Scripts\python.exe -m flask --app run create-user USERNAME --admin
 ```
 
-Replace `USERNAME` with the name the staff member signs in with.
+`create-staff` is kept as the old name. `reset-db` erases the database after a
+confirmation and recreates empty tables; run it when the models change.
+
+### `app/passwords.py`
+
+The password and username rules (12 to 256 characters, not on the bundled list
+in `common_passwords.txt`, not containing the username) and the temporary
+password generator.
+
+### `app/routes/admin.py`
+
+The admin-only Manage Staff page at `/admin/staff` and its POST actions.
 
 ### `app/models.py`
 
@@ -156,7 +168,9 @@ Defines the database tables:
 
 *   `Staff`: a mailroom staff account. Stores a username and a hashed password,
     never the password itself. `set_password()` and `check_password()` handle
-    the hashing.
+    the hashing. It also records the role (`is_admin`), whether the account is
+    active, failed sign-ins and the lockout time, the last sign-in, and
+    whether a new password is required.
 *   `Recipient`: a person who receives packages. First name, last name, and box
     number are all optional, because a label might show only one of them.
     `full_name` joins whichever names exist.

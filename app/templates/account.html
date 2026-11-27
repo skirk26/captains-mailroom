@@ -13,7 +13,27 @@
         <dt class="inset-label">Name</dt>
         <dd class="inset-value">{{ staff.username }}</dd>
       </div>
+      <div class="inset-row">
+        <dt class="inset-label">Role</dt>
+        <dd class="inset-value">{{ staff.role }}</dd>
+      </div>
     </dl>
+  </div>
+
+  <div class="inset-section">
+    <div class="inset-list">
+      <a href="{{ url_for('auth.change_password') }}" class="inset-row">
+        <span class="inset-row-title">Change password</span>
+        {{ icon("chevron-right", "inset-row-chevron") }}
+      </a>
+      {# Admins only; the page itself also refuses everyone else with a 403 #}
+      {% if staff.is_admin %}
+        <a href="{{ url_for('admin.staff_list') }}" class="inset-row">
+          <span class="inset-row-title">Manage staff</span>
+          {{ icon("chevron-right", "inset-row-chevron") }}
+        </a>
+      {% endif %}
+    </div>
   </div>
 
   {# POST, not a link, so another site can't sign staff out #}
