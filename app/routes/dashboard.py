@@ -1,5 +1,5 @@
 # Home screen (today's numbers and recent activity) and the Account screen.
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from flask import Blueprint, current_app, redirect, render_template, url_for
