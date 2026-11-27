@@ -93,3 +93,8 @@ Files at 100%: `cli.py`, `icons.py`, `security.py`, `routes/admin.py`, `routes/d
 - **Debug prints / TODO / FIXME / XXX / HACK:** none in app, tests or run.py. `print()` in `scripts/audit_screens.py` is that tool's output.
 - **Unused routes / dead feature flags / unread env vars:** none. All four env vars (`APP_ENV`, `APP_TIMEZONE`, `SECRET_KEY`, `FLASK_DEBUG`) are read and documented; every blueprint is registered and every route is reachable from a template link, JS fetch (`/api/recipients/search`, `/checkin/photo/<id>`) or test.
 - **Duplicated helpers:** `normalize_tracking` exists once. Time formatting exists in three places with different output formats (`dashboard.full_time`, `admin.audit_log` strftime, `local_time.js`) so they are not true duplicates. The only real duplication is P2 and P3.
+
+## Follow-up (approved after Phase 2)
+
+- D6 (unpinned dependencies): `requirements.txt` is now pinned to the exact versions the tests ran against.
+- D8 (stale `project-structure.md`): rewritten against the current code.

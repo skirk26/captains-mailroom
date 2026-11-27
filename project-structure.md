@@ -4,9 +4,12 @@ This document describes each file in the Captain's Mail repository and how the
 files work together. Use it to find where a feature lives before you change it.
 
 Captain's Mail is a Flask web app for a college mailroom. Staff use their phones
-to scan shipping labels, check packages in, and record who each package is for.
+to scan shipping labels, check packages in and out, photograph where each package
+is stored, and search for packages later. Admins manage staff accounts and read
+an audit log.
 
-For setup and run instructions, see [`README.md`](README.md).
+For setup, settings, and the command-line tools, see [`README.md`](README.md).
+For the look of the app, see [`docs/design-system.md`](docs/design-system.md).
 
 ## Directory layout
 
@@ -17,365 +20,179 @@ captains-mail/
 ├── README.md
 ├── project-structure.md
 ├── requirements.txt
+├── requirements-dev.txt
 ├── run.py
 ├── app/
 │   ├── __init__.py
+│   ├── audit.py
 │   ├── cli.py
+│   ├── common_passwords.txt
+│   ├── icons.py
 │   ├── models.py
+│   ├── passwords.py
+│   ├── photos.py
+│   ├── security.py
 │   ├── routes/
-│   │   ├── __init__.py
+│   │   ├── admin.py
 │   │   ├── auth.py
 │   │   ├── checkin.py
 │   │   ├── checkout.py
 │   │   ├── dashboard.py
+│   │   ├── errors.py
 │   │   └── search.py
 │   ├── static/
-│   │   ├── css/
-│   │   │   └── style.css
-│   │   ├── js/
-│   │   │   ├── checkin_confirm.js
-│   │   │   ├── manual_entry.js
-│   │   │   ├── recipient_search.js
-│   │   │   └── scanner.js
-│   │   └── uploads/
-│   │       └── .gitkeep
-│   └── templates/
-│       ├── checkin.html
-│       ├── checkin_confirm.html
-│       ├── dashboard.html
-│       └── login.html
-└── tests/
-    ├── test_db.py
-    ├── test_models.py
-    └── test_routes.py
+│   │   ├── css/        tokens.css, components.css, style.css
+│   │   ├── js/         one script per screen (see below)
+│   │   ├── uploads/    an unused folder kept from the first version
+│   │   └── vendor/     self-hosted Bootstrap, Bootstrap Icons, html5-qrcode
+│   └── templates/      18 Jinja templates (see below)
+├── docs/
+│   ├── design-system.md
+│   └── cleanup_report.md
+├── scripts/
+│   └── audit_screens.py
+└── tests/              one test file per area (see below)
 ```
+
+At run time the app also creates `instance/` (git-ignored). It holds the SQLite
+database, `captains_mail.db`, and the storage photos in `instance/uploads/`.
 
 ## How a check-in works
 
-The following steps show how the files work together when a staff member checks
-in a package:
+1.  A staff member signs in on `login.html`, handled by `routes/auth.py`.
+1.  On the home screen (`dashboard.html`), they open the Check In tab.
+1.  `checkin.html` (built on `_scan_page.html`) opens the camera. `scanner.js`
+    decodes the barcode and opens the confirm page with the tracking number in
+    the URL. If the label can't be scanned, `manual_entry.js` lets them type
+    the number instead.
+1.  `checkin_confirm.html` shows the tracking number and a suggested carrier.
+    As they type a name or box number, `recipient_search.js` calls
+    `/api/recipients/search` to suggest recipients entered before.
+1.  On **Save**, `routes/checkin.py` validates the form, finds or creates the
+    recipient, saves the package, and writes a `package_checked_in` audit event.
+1.  `checkin_photo.html` asks for a photo of the storage spot. `checkin_photo.js`
+    shrinks it in the browser and uploads it; `photos.py` checks that it is a
+    real image, strips its metadata, and stores it privately. Staff can skip it.
+1.  The app returns to the scanner with a brief toast, ready for the next package.
 
-1.  The staff member signs in on the login page (`login.html`), which
-    `routes/auth.py` handles.
-1.  On the dashboard (`dashboard.html`), they select **Check In Package**.
-1.  The check-in page (`checkin.html`) opens the camera. `scanner.js` decodes the
-    barcode and opens the confirmation page with the tracking number in the URL.
-    If the label can't be scanned, `manual_entry.js` lets them type the number
-    instead.
-1.  The confirmation page (`checkin_confirm.html`) shows the tracking number and a
-    suggested carrier. As they type a last name or box number,
-    `recipient_search.js` suggests recipients entered before.
-1.  When they select **Save Check-In**, `routes/checkin.py` validates the form,
-    finds or creates the recipient, and saves the package to the database.
-1.  The app returns them to the check-in page with a confirmation message, ready
-    for the next package.
+Check-out is similar: `checkout.html` scans the label, `checkout_confirm.html`
+shows the package and where it is stored, and the POST in `routes/checkout.py`
+marks it picked up.
 
 ## Root files
 
-### `.env.example`
-
-A template for the `.env` file that holds local settings. Copy it to `.env` and
-set `SECRET_KEY` to a long random string. Flask uses the secret key to sign
-session cookies.
-
-Note: Git ignores `.env`, so your real secret key never gets committed.
-
-### `.gitignore`
-
-Lists the files that Git doesn't track: the virtual environment (`venv/`), the
-`instance/` folder that holds the database, Python cache files, `.env`, any
-`.db` file, and uploaded photos in `app/static/uploads/`.
-
-### `README.md`
-
-The project's introduction. It explains what the app does and how to set it up,
-create a staff account, and run it.
-
-### `project-structure.md`
-
-This document.
-
-### `requirements.txt`
-
-The Python packages the app needs: Flask, Flask-SQLAlchemy, Flask-Login, and
-python-dotenv. To install them, run the following command:
-
-```bash
-venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-Note: Two development-only packages aren't listed here. `pytest` runs the tests,
-and `cryptography` lets Flask serve HTTPS for phone testing. Install them
-separately if you need them.
-
-### `run.py`
-
-The entry point that starts the app. It does the following:
-
-*   Creates the app by calling `create_app()`.
-*   Redirects the home page (`/`) to the dashboard. Signed-out visitors go on to
-    the login page.
-*   Starts the development server on port 5000 and listens on all network
-    addresses, so phones on the same Wi-Fi can connect.
-
-To start the app, run `venv\Scripts\python.exe run.py`.
+| File | What it is |
+|---|---|
+| `.env.example` | Template for `.env`: `APP_ENV`, `APP_TIMEZONE`, `SECRET_KEY`, `FLASK_DEBUG`. Copy it to `.env`. Git ignores `.env`. |
+| `.gitignore` | Ignores `venv/`, `instance/`, caches, `.env`, `*.db`, uploads in `app/static/uploads/`, and `audit-screenshots/`. |
+| `README.md` | Setup, settings, accounts, audit log, student IDs, running, and tests. |
+| `requirements.txt` | The app's Python packages, pinned to exact versions: Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF, Flask-Limiter, python-dotenv, Pillow, and tzdata. |
+| `requirements-dev.txt` | Development-only tools (pytest, playwright, axe-playwright-python). It includes `requirements.txt`. |
+| `run.py` | Creates the app with `create_app()` and starts the development server on port 5000, with debug mode only if `FLASK_DEBUG=1`. It is also the target of `flask --app run`. |
 
 ## The `app` package
 
-### `app/__init__.py`
-
-Builds and configures the Flask app. It defines the following:
-
-*   `db`: the SQLAlchemy database object that the rest of the app imports.
-*   `login_manager`: the Flask-Login object that tracks who's signed in.
-*   `create_app(test_config=None)`: the app factory. It loads settings from
-    `.env`, stores the SQLite database at `instance/captains_mail.db`, limits
-    uploads to 16 MB, creates any missing tables, registers the route
-    blueprints, and adds the `create-user` and `reset-db` commands.
-
-Tests pass `test_config` to use a temporary in-memory database instead of your
-real one.
-
-Note: `db.create_all()` creates missing tables but doesn't change existing ones.
-After you change a model, reset your local database so the new columns appear.
-
-### `app/cli.py`
-
-Defines two commands. `create-user` adds a staff account (`--admin` makes it an
-admin). It prompts for the password twice, hides what you type, and applies
-the password rules in `app/passwords.py`:
-
-```bash
-venv\Scripts\python.exe -m flask --app run create-user USERNAME --admin
-```
-
-`create-staff` is kept as the old name. `reset-db` erases the database after a
-confirmation and recreates empty tables; run it when the models change.
-`purge-audit` deletes old audit events, and `trim-student-ids` shortens stored
-student IDs to 4 digits (a dry run unless `--apply`).
-
-### `app/audit.py`
-
-`log_event(event_type, target, details)` writes one row of the audit log. It
-never raises, so a logging problem can't break a check-in. Pass only short,
-non-sensitive text: never passwords, tokens, student IDs, names or notes.
-
-### `app/passwords.py`
-
-The password and username rules (12 to 256 characters, not on the bundled list
-in `common_passwords.txt`, not containing the username) and the temporary
-password generator.
-
-### `app/routes/admin.py`
-
-The admin-only Manage Staff page at `/admin/staff` and its POST actions.
+| File | What it does |
+|---|---|
+| `__init__.py` | The app factory, `create_app(test_config=None)`. It defines the shared `db`, `login_manager`, `csrf`, and `limiter` objects; sets the cookie, upload-size, and timeout settings; refuses to start in production without a real `SECRET_KEY`; adds the HSTS header in production; enforces the 30-minute idle and 12-hour absolute session limits; ends the session of a deactivated account and redirects to Change Password when one is required; registers the blueprints and CLI commands; and creates missing tables. Tests pass `test_config` to use an in-memory database. |
+| `models.py` | The tables: `Staff`, `Recipient`, `Package`, and `AuditEvent`. It also holds the `load_user` callback for Flask-Login, the lockout rules, and `utc_now()`. Times are stored as UTC. |
+| `cli.py` | The `flask` commands: `create-user` (alias `create-staff`), `reset-db`, `purge-audit`, and `trim-student-ids`. |
+| `audit.py` | `log_event()` writes one audit row and never raises, so a logging problem can't break an action. It also defines the event types shown on the audit page. Pass only short, non-sensitive text. |
+| `passwords.py` | Password and username rules, the common-password check (`common_passwords.txt`), and the temporary-password generator. |
+| `photos.py` | Storage photos: validates and re-encodes uploads, stores them in `instance/uploads/`, makes thumbnails, and serves both at `/photos/...` to signed-in staff only. |
+| `security.py` | Adds the Content-Security-Policy and other security headers to every response. |
+| `icons.py` | The `icon()` template function. It inlines Bootstrap Icons SVGs from `static/vendor/`. |
+| `common_passwords.txt` | The list of common passwords that are refused. |
 
 ### `app/models.py`
 
-Defines the database tables:
-
-*   `Staff`: a mailroom staff account. Stores a username and a hashed password,
-    never the password itself. `set_password()` and `check_password()` handle
-    the hashing. It also records the role (`is_admin`), whether the account is
-    active, failed sign-ins and the lockout time, the last sign-in, and
-    whether a new password is required.
-*   `AuditEvent`: one line of the audit log (time, who, event type, a short
-    target and details, and the IP address).
+*   `Staff`: a staff account. It stores a username and a hashed password, the
+    role (`is_admin`), whether the account is active, failed sign-ins and the
+    lockout time, the last sign-in, and whether a new password is required.
 *   `Recipient`: a person who receives packages. First name, last name, and box
-    number are all optional, because a label might show only one of them.
-    `full_name` joins whichever names exist.
-*   `Package`: a checked-in package. Stores the tracking number, carrier,
-    recipient (optional), notes (optional), status, the staff member who checked
-    it in, and the check-in time. Tracking numbers are unique and stored without
-    spaces in uppercase, so a scanned number and a typed number match.
+    number are optional, because a label might show only one of them.
+*   `Package`: a checked-in package. It stores the tracking number (uppercase,
+    no spaces, unique), carrier, optional recipient, status (`checked_in` or
+    `checked_out`), who checked it in and out and when, the storage photo's file
+    name, notes, and the last 4 digits of the student ID given at pickup.
+*   `AuditEvent`: one line of the audit log (time, account, event type, a short
+    target and details, and the IP address).
 
-The file also holds `load_user()`, which Flask-Login uses to look up the
-signed-in staff member.
+`db.create_all()` creates missing tables but never changes existing ones. See
+the README for resetting a local database after a model change.
 
 ## Routes
 
-Each file in `app/routes/` is a Flask blueprint: a group of related pages.
+Each file in `app/routes/` is a Flask blueprint. All pages require sign-in
+unless noted.
 
-### `app/routes/__init__.py`
+| File | Routes |
+|---|---|
+| `auth.py` | `/login` (rate limited, public), `POST /logout`, and `/account/password` (Change Password). Redirects after sign-in go only to pages on this site. |
+| `dashboard.py` | `/` (redirects to the home screen), `/dashboard` (today's counts and recent activity), and `/account`. |
+| `checkin.py` | `/checkin` (scanner), `/checkin/confirm` (form and save), `/checkin/photo/<id>` (photo screen and upload), `/checkin/photo/<id>/skip`, and `/api/recipients/search` (JSON). Also holds `normalize_tracking()`, `guess_carrier()` (the carrier patterns the scanner also uses), `validate_checkin_form()`, and `find_or_create_recipient()`. |
+| `checkout.py` | `/checkout` (scanner) and `/checkout/confirm` (shows the package; the POST marks it picked up and can record a 4-digit student ID). |
+| `search.py` | `/search` (by tracking number, recipient name, or box number, with a status filter; rate limited) and `/packages/<id>` (detail page). |
+| `admin.py` | Admin only: `/admin/staff` and its POST actions (create, deactivate, reactivate, unlock, promote, demote, reset password), and `/admin/audit` (the audit log). |
+| `errors.py` | The friendly error pages (400, 403, 404, 405, 413, 429, 500). They show only fixed text. |
 
-An empty file that makes `app/routes/` a Python package.
-
-### `app/routes/auth.py`
-
-Handles signing in and out:
-
-*   `/login`: shows the login form and checks the username and password. After a
-    failed attempt, it keeps the typed username so only the password needs
-    retyping. After a successful one, it returns the staff member to the page they
-    were trying to reach, but only if that page is on this site.
-*   `/logout`: signs the staff member out and returns them to the login page.
-
-### `app/routes/dashboard.py`
-
-Serves `/dashboard`, the home screen after sign-in. Requires sign-in.
-
-### `app/routes/checkin.py`
-
-Handles everything about checking packages in. All routes require sign-in.
-
-| Route | Method | Purpose |
-| --- | --- | --- |
-| `/checkin` | GET | Shows the camera scanner page. |
-| `/checkin/confirm` | GET | Shows the confirmation form for a tracking number. Warns right away if the package is already checked in. |
-| `/checkin/confirm` | POST | Validates and saves the check-in. |
-| `/api/recipients/search` | GET | Returns up to 8 recipients as JSON, for autofill. |
-
-The file also contains these helper functions:
-
-*   `normalize_tracking()`: removes spaces and converts a tracking number to
-    uppercase.
-*   `guess_carrier()`: suggests a carrier from the tracking number's pattern, for
-    example `1Z…` for UPS or `TBA…` for Amazon. To support a new tracking number
-    format, add it to `CARRIER_PATTERNS`. The scanner uses the same list.
-*   `validate_checkin_form()`: checks the form and returns cleaned values and a
-    list of error messages. It doesn't touch the database, so you can test it on
-    its own.
-*   `find_or_create_recipient()`: reuses a recipient with the same name and box
-    number, ignoring case, or creates a new one.
-
-### `app/routes/checkout.py`
-
-Handles checking packages out: the scan page (`/checkout`), the confirmation page and the POST that marks a package picked up (`/checkout/confirm`). Staff can record the last 4 digits of the student ID.
-
-### `app/routes/search.py`
-
-Handles package search (`/search`) by tracking number, recipient name or box number with a status filter, and each package's detail page (`/packages/<id>`).
+`photos.py` also registers the `/photos/<file>` and `/photos/thumb/<file>`
+routes. `routes/__init__.py` is empty and makes the folder a package.
 
 ## Templates
 
-The files in `app/templates/` are Jinja templates that Flask turns into HTML
-pages. Each page loads Bootstrap 5 and `style.css`.
+All templates are in `app/templates/`. Files starting with `_` are shared pieces.
 
-### `app/templates/login.html`
-
-The sign-in page. Shows the username and password fields and any error message.
-
-### `app/templates/dashboard.html`
-
-The home screen. Shows who's signed in, a **Sign out** link, and the
-**Check In Package** button.
-
-### `app/templates/checkin.html`
-
-The scanner page. Contains the camera viewfinder with gold corner brackets, the
-scanning instructions, any messages (for example, "Package … checked in"), and
-the **Can't scan? Enter tracking number manually** form.
-
-It loads the html5-qrcode library, version 2.3.8, from a CDN. An integrity hash
-stops the page from running a tampered copy.
-
-### `app/templates/checkin_confirm.html`
-
-The confirmation form. Shows a chip that says whether the number was scanned or
-typed, and these fields:
-
-*   Tracking number and carrier, both required.
-*   First name, last name, and box number, all optional. A box number must be
-    from 1000 to 5199.
-*   Notes, optional, up to 500 characters.
-
-At least one of name, box number, or notes must be filled in. If saving fails,
-the page shows the errors in a red box and keeps everything the staff member
-typed.
+| File | What it shows |
+|---|---|
+| `base.html` | The base layout: viewport, safe areas, flash messages, toasts, and the bottom tab bar. |
+| `_scan_page.html` | The full-screen camera layout shared by the two scan pages. |
+| `_macros.html` | Shared pieces: alerts, flash messages, toasts, status chips, and the back button. |
+| `_package.html` | Pieces shared by pages that show one package: the storage-photo card, photo viewer, and local-time helper. |
+| `login.html`, `account.html`, `change_password.html` | Sign-in, the Account screen, and Change Password. |
+| `dashboard.html` | The home screen. |
+| `checkin.html`, `checkin_confirm.html`, `checkin_photo.html` | The three check-in steps. |
+| `checkout.html`, `checkout_confirm.html` | The two check-out steps. |
+| `search.html`, `package_detail.html` | Package search and one package's detail page. |
+| `admin_staff.html`, `admin_audit.html` | Manage Staff and the audit log. |
+| `error.html` | The shared error page. |
 
 ## Static files
 
-Flask serves the files in `app/static/` to the browser as-is.
+*   **CSS** (`app/static/css/`): `tokens.css` holds every color, size, and
+    timing; `components.css` holds shared components; `style.css` holds
+    page-specific layout. See the design system document.
+*   **JavaScript** (`app/static/js/`): each file belongs to one screen or
+    component. `scanner.js` (barcode scanning), `manual_entry.js` ("Can't scan?"
+    sheet), `recipient_search.js` (autofill), `checkin_confirm.js` and
+    `checkout_confirm.js` (stop double submits), `checkin_photo.js` (camera,
+    shrinking, and upload), `photo_viewer.js` (full-screen photo),
+    `local_time.js` (times in the phone's time zone), and `toasts.js` (brief
+    confirmations).
+*   **Vendor** (`app/static/vendor/`): Bootstrap CSS, the Bootstrap Icons that
+    are used, and html5-qrcode, all served from this site so the
+    Content-Security-Policy can allow only its own files. Its README lists
+    versions and checksums.
 
-### `app/static/css/style.css`
+## Tests and tools
 
-All custom styles. It defines the color palette (navy `#1C2B4A`, gold
-`#D9A441`, and cream `#FAF6EE`) and styles the following:
+Run the tests with `python -m pytest`. Each test file builds its own app with an
+in-memory database.
 
-*   Buttons and the page header.
-*   The camera viewfinder and its corner brackets.
-*   Invalid-field highlighting.
-*   The recipient suggestion list.
+| File | Covers |
+|---|---|
+| `test_db.py` | The models: optional fields, relationships, and constraints. |
+| `test_routes.py`, `test_app_routes.py` | Check-in routes and the app when started without `run.py`. |
+| `test_scan_screens.py` | The scan, confirm, and photo screens. |
+| `test_checkout.py` | Check-out. |
+| `test_search.py` | Search and the detail page. |
+| `test_photos.py` | Photo validation, storage, and serving. |
+| `test_home.py` | The home screen and its counts. |
+| `test_accounts.py` | Roles, Manage Staff, password rules, forced password change, and lockout. |
+| `test_audit.py` | The audit log, `purge-audit`, and student ID shortening. |
+| `test_security.py` | CSRF, headers, session timeouts, rate limits, and production startup checks. |
+| `test_design.py` | Design system: colors only in `tokens.css`, the nav bar, icons, and status chips. |
 
-### `app/static/js/scanner.js`
-
-Runs the barcode scanner on the check-in page:
-
-*   Opens the back camera and fills the viewfinder with the video.
-*   Decodes only what's inside the gold brackets.
-*   Reads these formats: Code 128, the long barcodes most carriers use; DataMatrix,
-    the square codes on Amazon labels; and a few test formats. The list is in
-    `SUPPORTED_FORMATS` at the top of the file.
-*   Ignores DataMatrix codes that don't look like a tracking number, such as
-    Amazon's internal sorting codes.
-*   Shows a clear message if the camera is blocked, missing, or in use, or if
-    the page isn't on HTTPS.
-*   Turns the camera off when you leave the page.
-
-When it reads a code, it opens the confirmation page with the tracking number.
-
-### `app/static/js/manual_entry.js`
-
-Shows and hides the manual tracking-number form on the check-in page, and trims
-spaces before submitting. It's separate from `scanner.js` so that manual entry
-still works if the scanner fails to load.
-
-### `app/static/js/checkin_confirm.js`
-
-Prevents double submits on the confirmation page. When you select
-**Save Check-In**, the button changes to **Saving…** and is disabled.
-
-### `app/static/js/recipient_search.js`
-
-Adds autofill to the confirmation page. As you type at least 2 characters in the
-last name or box number field, it waits 250 milliseconds, searches past
-recipients, and shows matches like "Rivera, Alex (Box 1234)". Selecting a match
-fills in the first name, last name, and box number.
-
-The form works the same with or without autofill. If the search finds nothing
-or fails, no list appears.
-
-### `app/static/uploads/.gitkeep`
-
-An empty file that keeps the `uploads` folder in Git. The folder is for package
-location photos in a later version. Git ignores everything else in it.
-
-## Tests
-
-The tests use pytest and a temporary in-memory database, so they never change
-your real data. To run all of them, use the following command:
-
-```bash
-venv\Scripts\python.exe -m pytest
-```
-
-### `tests/test_db.py`
-
-Tests the database models: optional recipient names, readable `repr()` output
-when fields are missing, packages without a recipient, the required carrier, and
-unique tracking numbers.
-
-### `tests/test_routes.py`
-
-Tests the pages and helpers in `routes/checkin.py`:
-
-*   Saving a check-in, including the success message and the recipient reuse.
-*   Validation: box number range, field lengths, the at-least-one rule, and
-    duplicate tracking numbers.
-*   That a failed save keeps what was typed.
-*   Carrier guessing and the recipient search API.
-*   That signed-out visitors are sent to the login page.
-
-### `tests/test_models.py`
-
-A placeholder. It doesn't contain any tests yet; the model tests are in
-`test_db.py`.
-
-## Files that aren't in Git
-
-These files exist on your computer but aren't committed:
-
-*   `venv/`: the Python virtual environment with the installed packages.
-*   `instance/captains_mail.db`: the SQLite database with your staff accounts
-    and packages. To inspect it, open it in DB Browser for SQLite.
-*   `.env`: your local settings, created from `.env.example`.
+`scripts/audit_screens.py` is a development tool. It starts the app against a
+temporary database, opens every page in Chromium at phone sizes, and reports
+layout and accessibility problems. See the notes at the top of the script.
