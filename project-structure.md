@@ -25,6 +25,7 @@ captains-mail/
 ├── app/
 │   ├── __init__.py
 │   ├── audit.py
+│   ├── backup.py
 │   ├── cli.py
 │   ├── common_passwords.txt
 │   ├── icons.py
@@ -47,6 +48,7 @@ captains-mail/
 │   │   └── vendor/     self-hosted Bootstrap, Bootstrap Icons, html5-qrcode
 │   └── templates/      18 Jinja templates (see below)
 ├── docs/
+│   ├── deployment.md
 │   ├── design-system.md
 │   └── cleanup_report.md
 ├── scripts/
@@ -83,7 +85,7 @@ marks it picked up.
 
 | File | What it is |
 |---|---|
-| `.env.example` | Template for `.env`: `APP_ENV`, `APP_TIMEZONE`, `SECRET_KEY`, `FLASK_DEBUG`. Copy it to `.env`. Git ignores `.env`. |
+| `.env.example` | Template for `.env`: `APP_ENV`, `APP_TIMEZONE`, `SECRET_KEY`, `FLASK_DEBUG`, `TRUST_PROXY`. Copy it to `.env`. Git ignores `.env`. |
 | `.gitignore` | Ignores `venv/`, `instance/`, caches, `.env`, `*.db`, uploads in `app/static/uploads/`, and `audit-screenshots/`. |
 | `README.md` | Setup, settings, accounts, audit log, student IDs, running, and tests. |
 | `requirements.txt` | The app's Python packages, pinned to exact versions: Flask, Flask-SQLAlchemy, Flask-Login, Flask-WTF, Flask-Limiter, python-dotenv, Pillow, and tzdata. |
@@ -94,9 +96,10 @@ marks it picked up.
 
 | File | What it does |
 |---|---|
-| `__init__.py` | The app factory, `create_app(test_config=None)`. It defines the shared `db`, `login_manager`, `csrf`, and `limiter` objects; sets the cookie, upload-size, and timeout settings; refuses to start in production without a real `SECRET_KEY`; adds the HSTS header in production; enforces the 30-minute idle and 12-hour absolute session limits; ends the session of a deactivated account and redirects to Change Password when one is required; registers the blueprints and CLI commands; and creates missing tables. Tests pass `test_config` to use an in-memory database. |
+| `__init__.py` | The app factory, `create_app(test_config=None)`. It defines the shared `db`, `login_manager`, `csrf`, and `limiter` objects; sets the cookie, upload-size, and timeout settings; loads `.env` from the project root; refuses to start in production without a real `SECRET_KEY`, with debug on, or with insecure cookies; trusts proxy headers when `TRUST_PROXY=1`; adds the HSTS header in production; enforces the 30-minute idle and 12-hour absolute session limits; ends the session of a deactivated account and redirects to Change Password when one is required; registers the blueprints and CLI commands; and creates missing tables. Tests pass `test_config` to use an in-memory database. |
 | `models.py` | The tables: `Staff`, `Recipient`, `Package`, and `AuditEvent`. It also holds the `load_user` callback for Flask-Login, the lockout rules, and `utc_now()`. Times are stored as UTC. |
-| `cli.py` | The `flask` commands: `create-user` (alias `create-staff`), `reset-db`, `purge-audit`, and `trim-student-ids`. |
+| `cli.py` | The `flask` commands: `create-user` (alias `create-staff`), `init-db`, `backup`, `reset-db`, `purge-audit`, and `trim-student-ids`. |
+| `backup.py` | What `flask backup` does: a zip of a consistent SQLite copy and the photos in `instance/backups/`, keeping the newest 5. |
 | `audit.py` | `log_event()` writes one audit row and never raises, so a logging problem can't break an action. It also defines the event types shown on the audit page. Pass only short, non-sensitive text. |
 | `passwords.py` | Password and username rules, the common-password check (`common_passwords.txt`), and the temporary-password generator. |
 | `photos.py` | Storage photos: validates and re-encodes uploads, stores them in `instance/uploads/`, makes thumbnails, and serves both at `/photos/...` to signed-in staff only. |
@@ -190,6 +193,7 @@ in-memory database.
 | `test_home.py` | The home screen and its counts. |
 | `test_accounts.py` | Roles, Manage Staff, password rules, forced password change, and lockout. |
 | `test_audit.py` | The audit log, `purge-audit`, and student ID shortening. |
+| `test_deployment.py` | Importing from another working directory, `.env` loading, `TRUST_PROXY`, production startup checks, `init-db`, and `backup`. |
 | `test_security.py` | CSRF, headers, session timeouts, rate limits, and production startup checks. |
 | `test_design.py` | Design system: colors only in `tokens.css`, the nav bar, icons, and status chips. |
 

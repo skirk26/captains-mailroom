@@ -3,8 +3,10 @@ from datetime import timedelta
 import click
 from flask import current_app
 from flask.cli import with_appcontext
+from sqlalchemy import inspect as sa_inspect
 
-from app import db
+from app import create_missing_tables, db
+from app.backup import KEEP_BACKUPS, BackupError, create_backup
 from app.audit import log_event
 from app.models import AuditEvent, Package, Staff, utc_now
 from app.passwords import password_problems, username_problem
@@ -104,3 +106,36 @@ def trim_student_ids(apply_changes):
         package.checked_out_to = trimmed
     db.session.commit()
     click.echo(f"Shortened {len(to_change)} student ID(s).")
+
+
+@click.command("init-db")
+@with_appcontext
+def init_db():
+    """Create any missing database tables and say what was done.
+
+    The app also does this every time it starts. Existing tables are never
+    changed; after a model gains a column, use reset-db (which erases data).
+    """
+    created = list(current_app.config.get("TABLES_CREATED_AT_STARTUP", []))
+    created += create_missing_tables()
+    tables = sorted(sa_inspect(db.engine).get_table_names())
+    click.echo(f"Database: {current_app.config['SQLALCHEMY_DATABASE_URI']}")
+    if created:
+        click.echo(f"Created table(s): {', '.join(sorted(created))}.")
+    else:
+        click.echo("No tables were created: they all already existed.")
+    click.echo(f"Tables now: {', '.join(tables)}.")
+    click.echo("Existing tables are never altered.")
+
+
+@click.command("backup")
+@with_appcontext
+def backup():
+    """Back up the database and photos to instance/backups/ (keeps the newest 5)."""
+    try:
+        path, photos, removed = create_backup()
+    except BackupError as err:
+        raise click.ClickException(str(err)) from err
+    click.echo(f"Backup written: {path} ({path.stat().st_size / 1024:.0f} KB, {photos} photo file(s)).")
+    if removed:
+        click.echo(f"Removed {len(removed)} older backup(s); the newest {KEEP_BACKUPS} are kept.")

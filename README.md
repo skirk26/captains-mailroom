@@ -53,6 +53,12 @@ copy .env.example .env         # then set a real SECRET_KEY in .env
 | `SECRET_KEY` | long random string | Signs session cookies. Generate one with `python -c "import secrets; print(secrets.token_hex(32))"`. |
 | `FLASK_DEBUG` | `0` (default) or `1` | Debug mode: auto-reload and the in-browser debugger. Never `1` on a real server. |
 | `APP_TIMEZONE` | a time zone name, default `America/New_York` | Where "today" starts for the home screen's counts. |
+| `TRUST_PROXY` | `0` (default) or `1` | Set to `1` behind a host that terminates HTTPS and forwards requests (PythonAnywhere). The app then trusts one proxy's `X-Forwarded-For`, `-Proto` and `-Host` headers, so each user's real IP address is used for the sign-in rate limit and the audit log. Leave it `0` when nothing is in front of the app, because the headers could be faked. |
+
+In production the app refuses to start if `SECRET_KEY` is missing or a
+placeholder, if debug mode is on, or if secure cookies are off, and it logs
+which checks passed (never the key). Settings are read from the environment
+first, then from the project's `.env`, wherever the app is started from.
 
 Staff are signed out after 30 minutes of inactivity, or 12 hours after signing in.
 
@@ -94,6 +100,31 @@ flask --app run create-user <username> --admin
 **deletes every account and package record**; photos in `instance/uploads/` are
 not touched. If you want to keep the old data, copy `instance/captains_mail.db`
 somewhere safe first. Use `--yes` to skip the question.
+
+### Tables and backups
+
+The app creates any missing tables each time it starts. To do it explicitly and
+see what happened:
+
+```bash
+flask --app run init-db
+```
+
+To back up the database and the photos:
+
+```bash
+flask --app run backup
+```
+
+This writes `instance/backups/captains_mail_YYYYMMDD_HHMMSS.zip` (UTC time)
+with a consistent copy of the SQLite database, made with SQLite's own backup
+API so it's safe while the app runs, plus the photo folder. The 5 newest
+backups are kept and older ones are deleted. Download a backup to keep a copy
+off the server.
+
+## Deploying
+
+See [`docs/deployment.md`](docs/deployment.md) for PythonAnywhere.
 
 ## Audit log
 
