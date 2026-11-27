@@ -147,7 +147,7 @@ def test_round_trip_check_in_then_check_out(client):
     assert "Checked in" in lookup
     assert "Ada Lovelace" in lookup
 
-    response = check_out(client, student_id="00912345")
+    response = check_out(client, student_id="2345")
     assert response.status_code == 302
     flashed = client.get("/checkout").get_data(as_text=True)
     assert f"Picked up: …{UPS_TRACKING[-8:]}." in flashed  # toast on the scanner
@@ -156,7 +156,7 @@ def test_round_trip_check_in_then_check_out(client):
     assert package.status == "checked_out"
     assert package.checked_in_by == package.checked_out_by == logged_in_staff_id()
     assert package.checked_out_at >= package.checked_in_at
-    assert package.checked_out_to == "00912345"
+    assert package.checked_out_to == "2345"
 
     lookup = client.get("/checkout/confirm", query_string={"tracking": UPS_TRACKING}).get_data(as_text=True)
     assert "Picked up" in lookup

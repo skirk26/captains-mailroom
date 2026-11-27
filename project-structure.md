@@ -151,6 +151,14 @@ venv\Scripts\python.exe -m flask --app run create-user USERNAME --admin
 
 `create-staff` is kept as the old name. `reset-db` erases the database after a
 confirmation and recreates empty tables; run it when the models change.
+`purge-audit` deletes old audit events, and `trim-student-ids` shortens stored
+student IDs to 4 digits (a dry run unless `--apply`).
+
+### `app/audit.py`
+
+`log_event(event_type, target, details)` writes one row of the audit log. It
+never raises, so a logging problem can't break a check-in. Pass only short,
+non-sensitive text: never passwords, tokens, student IDs, names or notes.
 
 ### `app/passwords.py`
 
@@ -171,6 +179,8 @@ Defines the database tables:
     the hashing. It also records the role (`is_admin`), whether the account is
     active, failed sign-ins and the lockout time, the last sign-in, and
     whether a new password is required.
+*   `AuditEvent`: one line of the audit log (time, who, event type, a short
+    target and details, and the IP address).
 *   `Recipient`: a person who receives packages. First name, last name, and box
     number are all optional, because a label might show only one of them.
     `full_name` joins whichever names exist.

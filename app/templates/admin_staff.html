@@ -33,6 +33,15 @@
     </section>
   {% endif %}
 
+  <div class="inset-section">
+    <div class="inset-list">
+      <a href="{{ url_for('admin.audit_log') }}" class="inset-row">
+        <span class="inset-row-title">Audit log</span>
+        {{ icon("chevron-right", "inset-row-chevron") }}
+      </a>
+    </div>
+  </div>
+
   <h2 class="inset-header">Staff ({{ members | length }})</h2>
   {% for member in members %}
     {% set is_me = member.id == current_user.id %}

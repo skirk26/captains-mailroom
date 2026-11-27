@@ -69,7 +69,7 @@
         {% if state == "picked_up" %}
           {% if package.checked_out_to %}
             <div class="inset-row">
-              <dt class="inset-label">Student ID</dt>
+              <dt class="inset-label">Student ID (last 4)</dt>
               <dd class="inset-value">{{ package.checked_out_to }}</dd>
             </div>
           {% endif %}
@@ -92,10 +92,11 @@
         <div class="inset-section">
           <div class="inset-list">
             <div class="inset-row inset-field">
-              <label for="student-id" class="inset-field-label">Student ID (optional)</label>
+              <label for="student-id" class="inset-field-label">Student ID, last 4 digits (optional)</label>
               <input type="text" class="inset-field-input" id="student-id" name="student_id"
-                     inputmode="numeric" autocomplete="off" maxlength="20"
-                     value="{{ student_id }}" placeholder="ID of the person picking it up">
+                     inputmode="numeric" autocomplete="off" maxlength="4"
+                     pattern="[0-9]{4}"
+                     value="{{ student_id }}" placeholder="Last 4 digits">
             </div>
           </div>
         </div>

@@ -242,7 +242,7 @@ def test_check_out_confirm_layout(client):
 
     assert html.index("Where it's stored") < html.index("status-chip") < html.index('<dl class="inset-list')
     assert re.search(r'<dt class="inset-label">Recipient</dt>\s*<dd class="inset-value">Ada Lovelace</dd>', html)
-    assert '<label for="student-id" class="inset-field-label">Student ID (optional)</label>' in html
+    assert '<label for="student-id" class="inset-field-label">Student ID, last 4 digits (optional)</label>' in html
     assert re.search(r'<div class="action-bar">\s*<div class="action-bar-inner">\s*<button type="submit" id="pickup-button"', html)
     assert 'class="tab-bar"' not in html
 

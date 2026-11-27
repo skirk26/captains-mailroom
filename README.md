@@ -16,7 +16,7 @@ SQLite, Pillow, Jinja2 + Bootstrap, html5-qrcode for in-browser barcode scanning
   shrinks the photo before uploading; the server checks it is a real image,
   strips its metadata (including GPS), and stores it privately.
 - **Check out:** scan the label to find the package, see where it's stored,
-  optionally record the student ID, and mark it picked up.
+  optionally record the last 4 digits of the student ID, and mark it picked up.
 - **Home and tabs:** a home screen with Check In / Check Out tiles, today's
   counts, and recent activity, and a bottom tab bar (Home, Check In, Check
   Out, Find, Account) on the main screens.
@@ -26,6 +26,8 @@ SQLite, Pillow, Jinja2 + Bootstrap, html5-qrcode for in-browser barcode scanning
 - **Accounts:** staff and admin roles, an admin-only Manage Staff page
   (create, deactivate, unlock, promote, reset passwords), a Change Password
   page, password rules, and a 15-minute lockout after 5 wrong passwords.
+- **Audit log:** an admin-only page (Manage staff → Audit log) listing sign-ins,
+  account changes, and package check-ins, pickups and photos, newest first.
 - **Security:** staff sign-in, CSRF protection, session timeouts, security
   headers and a strict Content Security Policy, rate limits on sign-in and
   search, and friendly error pages. All libraries are served from this site.
@@ -92,6 +94,37 @@ flask --app run create-user <username> --admin
 **deletes every account and package record**; photos in `instance/uploads/` are
 not touched. If you want to keep the old data, copy `instance/captains_mail.db`
 somewhere safe first. Use `--yes` to skip the question.
+
+## Audit log
+
+Admins can read the log at Account → Manage staff → Audit log: newest first,
+50 per page, filtered by event type, with times in `APP_TIMEZONE`. It records
+who did what (sign-ins and failures, lockouts, password changes, account and
+role changes, and package check-ins, pickups and photo uploads), the account's
+name at the time, the IP address, and a short target such as the last 8
+characters of a tracking number. It never records passwords, student IDs,
+recipient names or notes.
+
+Delete old events (365 days by default) with a confirmation question:
+
+```bash
+flask --app run purge-audit --days 365
+```
+
+Add `--yes` to skip the question.
+
+## Student IDs
+
+Check-out stores only the **last 4 digits** of a student ID (exactly 4 digits,
+or blank). To shorten IDs saved before this change, preview first, then apply:
+
+```bash
+flask --app run trim-student-ids           # dry run: shows how many would change
+flask --app run trim-student-ids --apply   # shortens them
+```
+
+The shortening can't be undone, so copy `instance/captains_mail.db` first if
+you want a backup.
 
 ## Run
 

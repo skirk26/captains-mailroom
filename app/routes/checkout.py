@@ -1,9 +1,12 @@
 # Package check-out routes (scan label, look up package, mark picked up).
+import re
+
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db
+from app.audit import log_event, tracking_target
 from app.models import SQLITE_MAX_INTEGER, Package, utc_now
 from app.photos import photo_exists
 from app.routes.checkin import CARRIER_PATTERNS, normalize_tracking
@@ -12,7 +15,10 @@ checkout_bp = Blueprint("checkout", __name__)
 
 CHECKED_IN_STATUS = "checked_in"
 CHECKED_OUT_STATUS = "checked_out"
-STUDENT_ID_MAX_LENGTH = 20  # matches Package.checked_out_to
+# Only the last 4 digits are kept, so a database leak can't expose a full ID
+STUDENT_ID_DIGITS = 4
+STUDENT_ID_ERROR = f"Student ID must be exactly {STUDENT_ID_DIGITS} digits, or leave it blank."
+STUDENT_ID_PATTERN = re.compile(rf"[0-9]{{{STUDENT_ID_DIGITS}}}")  # ASCII digits only
 
 
 def expected_package(raw_id):
@@ -109,9 +115,8 @@ def mark_picked_up(package, tracking):
         return render_confirm(package, tracking)
 
     student_id = request.form.get("student_id", "").strip()
-    if len(student_id) > STUDENT_ID_MAX_LENGTH:
-        errors = [f"Student ID can be at most {STUDENT_ID_MAX_LENGTH} characters."]
-        return render_confirm(package, tracking, errors, student_id)
+    if student_id and not STUDENT_ID_PATTERN.fullmatch(student_id):
+        return render_confirm(package, tracking, [STUDENT_ID_ERROR], student_id)
 
     # Only applies while the package is still checked in, so a double tap or two
     # staff checking out the same package at once can't both succeed
@@ -137,6 +142,8 @@ def mark_picked_up(package, tracking):
         db.session.refresh(package)
         return render_confirm(package, tracking)
 
+    # Deliberately no student ID here: the audit log never holds one
+    log_event("package_checked_out", tracking_target(tracking))
     # Back to the scanner, ready for the next package
     flash(f"Picked up: …{tracking[-8:]}.", "toast")
     return redirect(url_for("checkout.checkout"))

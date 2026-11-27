@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import nav_back %}
+{# Reached from Manage Staff, so the Account tab stays current #}
+{% set tab = "account" %}
+
+{% block title %}Audit Log{% endblock %}
+{% block nav_leading %}{{ nav_back(url_for('admin.staff_list'), "Staff") }}{% endblock %}
+{% block nav_title %}Audit Log{% endblock %}
+
+{% block content %}
+  {# A plain GET form, so the filter is part of the URL and needs no script #}
+  <form method="get" action="{{ url_for('admin.audit_log') }}" class="mb-3">
+    <div class="inset-section mb-2">
+      <div class="inset-list">
+        <div class="inset-row">
+          <label class="inset-label" for="audit-type">Event</label>
+          <select class="inset-select" id="audit-type" name="type">
+            <option value="">All events</option>
+            {% for value, label in event_types.items() %}
+              <option value="{{ value }}" {% if value == selected %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-secondary w-100">Apply filter</button>
+  </form>
+
+  <p class="footnote text-secondary-label mb-2 px-1">
+    {{ total }} event{{ "" if total == 1 else "s" }}, newest first. Times are in {{ timezone_name }}.
+  </p>
+
+  {% if rows %}
+    <div class="inset-section">
+      <ul class="inset-list list-unstyled mb-0">
+        {% for row in rows %}
+          <li class="inset-row audit-row">
+            <span class="audit-event">{{ row.label }}</span>
+            <span class="footnote text-secondary-label">
+              {{ row.when }} · {{ row.staff or "Not signed in" }}
+            </span>
+            {% if row.target or row.details %}
+              <span class="footnote">
+                {% if row.target %}<span class="mono">{{ row.target }}</span>{% endif %}
+                {% if row.details %}<span class="text-secondary-label">{{ row.details }}</span>{% endif %}
+              </span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    {% if page_count > 1 %}
+      <nav class="search-pages" aria-label="Audit log pages">
+        {% if previous_url %}
+          <a href="{{ previous_url }}" class="btn btn-secondary">{{ icon("chevron-left") }}<span>Newer</span></a>
+        {% else %}
+          <span></span>
+        {% endif %}
+        <span class="footnote text-secondary-label">Page {{ page }} of {{ page_count }}</span>
+        {% if next_url %}
+          <a href="{{ next_url }}" class="btn btn-secondary"><span>Older</span>{{ icon("chevron-right") }}</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="inset-list empty-card">
+      {{ icon("info-circle-fill") }}
+      <p class="headline mb-1">No events</p>
+      <p class="text-secondary-label mb-0">Nothing has been recorded for this filter.</p>
+    </div>
+  {% endif %}
+{% endblock %}

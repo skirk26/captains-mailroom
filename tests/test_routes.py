@@ -483,7 +483,7 @@ def post_pickup(client, tracking=UPS_TRACKING, **fields):
 
 def test_pickup_checks_the_package_out(client):
     post_checkin(client, box_number="1815")
-    response = post_pickup(client, student_id=" 00912345 ")
+    response = post_pickup(client, student_id=" 2345 ")
 
     assert response.status_code == 302
     assert response.headers["Location"] == "/checkout"
@@ -493,7 +493,7 @@ def test_pickup_checks_the_package_out(client):
     assert package.checked_out_by == staff.id
     assert package.checked_out_at is not None
     assert package.checked_out_at >= package.checked_in_at
-    assert package.checked_out_to == "00912345"
+    assert package.checked_out_to == "2345"
 
 
 def test_pickup_success_message_shows_on_scanner_page(client):
@@ -518,13 +518,15 @@ def test_pickup_normalizes_tracking(client):
     assert all_packages()[0].status == "checked_out"
 
 
-def test_pickup_rejects_overlong_student_id(client):
+@pytest.mark.parametrize("student_id", ["1" * 21, "123", "12345", "12a4", "１２３４", "12 34", "-123"])
+def test_pickup_rejects_a_student_id_that_is_not_exactly_4_digits(client, student_id):
     post_checkin(client, box_number="1815")
-    response = post_pickup(client, student_id="1" * 21)
+    response = post_pickup(client, student_id=student_id)
     html = response.get_data(as_text=True)
     assert response.status_code == 200
-    assert "Student ID can be at most 20 characters." in html
+    assert "Student ID must be exactly 4 digits, or leave it blank." in html
     assert all_packages()[0].status == "checked_in"
+    assert all_packages()[0].checked_out_to is None
 
 
 def test_pickup_of_unknown_package_redirects(client):
@@ -537,23 +539,23 @@ def test_pickup_of_unknown_package_redirects(client):
 
 def test_pickup_twice_keeps_the_first_checkout(client):
     post_checkin(client, box_number="1815")
-    post_pickup(client, student_id="111")
+    post_pickup(client, student_id="1111")
     first = all_packages()[0]
     first_time, first_staff = first.checked_out_at, first.checked_out_by
 
-    response = post_pickup(client, student_id="222")
+    response = post_pickup(client, student_id="2222")
     html = response.get_data(as_text=True)
     assert response.status_code == 200
     assert "Picked up" in html
     assert "No further action needed." in html
     assert "Checked out by" in html
     assert "tester" in html
-    assert "111" in html
+    assert "1111" in html
 
     package = all_packages()[0]
     assert package.checked_out_at == first_time
     assert package.checked_out_by == first_staff
-    assert package.checked_out_to == "111"
+    assert package.checked_out_to == "1111"
 
 
 def test_pickup_that_loses_a_race_shows_picked_up(client, monkeypatch):
@@ -567,18 +569,18 @@ def test_pickup_that_loses_a_race_shows_picked_up(client, monkeypatch):
         db.session.execute(
             db.update(Package)
             .where(Package.id == package.id)
-            .values(status="checked_out", checked_out_to="111")
+            .values(status="checked_out", checked_out_to="1111")
             .execution_options(synchronize_session=False)
         )
         return package
 
     monkeypatch.setattr(checkout, "find_package", find_then_lose_race)
-    response = post_pickup(client, student_id="222")
+    response = post_pickup(client, student_id="2222")
     html = response.get_data(as_text=True)
 
     assert response.status_code == 200
     assert "No further action needed." in html
-    assert all_packages()[0].checked_out_to == "111"
+    assert all_packages()[0].checked_out_to == "1111"
 
 
 def test_pickup_requires_login(app):

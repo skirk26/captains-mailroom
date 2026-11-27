@@ -122,11 +122,13 @@ def create_app(test_config=None):
     app.register_blueprint(photos_bp)
     app.register_blueprint(search_bp)
 
-    from app.cli import create_user, reset_db
+    from app.cli import create_user, purge_audit, reset_db, trim_student_ids
 
     app.cli.add_command(create_user)
     app.cli.add_command(create_user, "create-staff")  # the command's old name
     app.cli.add_command(reset_db)
+    app.cli.add_command(purge_audit)
+    app.cli.add_command(trim_student_ids)
 
     return app
 

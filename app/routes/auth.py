@@ -7,6 +7,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from werkzeug.security import check_password_hash
 
 from app import SIGNED_IN_AT, db, limiter
+from app.audit import LOGIN_NAME_MAX_LENGTH, clip, log_event
 from app.models import DUMMY_PASSWORD_HASH, Staff
 from app.passwords import password_problems
 
@@ -58,12 +59,25 @@ def login():
             login_user(staff)
             # Starts the 12-hour limit; see enforce_session_timeouts in app/__init__.py
             session[SIGNED_IN_AT] = time.time()
+            log_event("login_success", staff.username)
             return redirect(safe_next_url())
 
         if can_sign_in:
             # Only live accounts count failures; the fifth locks it for 15 minutes
             staff.register_failed_login()
             db.session.commit()
+        # The reason is for admins reading the audit log; the sign-in page never shows it
+        if not staff:
+            reason = "unknown user"
+        elif not staff.is_active:
+            reason = "deactivated"
+        elif not can_sign_in:
+            reason = "locked"
+        else:
+            reason = "wrong password"
+        log_event("login_failure", clip(username, LOGIN_NAME_MAX_LENGTH), reason)
+        if can_sign_in and staff.is_locked:
+            log_event("account_locked", staff.username, "5 wrong passwords in a row")
 
         # One message for an unknown user, a wrong password, a locked account
         # and a deactivated account
@@ -77,6 +91,7 @@ def login():
 @bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    log_event("logout", current_user.username)
     logout_user()
     session.pop(SIGNED_IN_AT, None)
     flash("You have been signed out.", "info")
@@ -107,6 +122,7 @@ def change_password():
             current_user.set_password(new)
             current_user.must_change_password = False
             db.session.commit()
+            log_event("password_changed", current_user.username)
             flash("Password changed.", "toast")
             return redirect(url_for("dashboard.account"))
 

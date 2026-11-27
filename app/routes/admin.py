@@ -1,11 +1,16 @@
 # Admin-only staff management: /admin/staff and the POST actions beside it.
+import math
 from functools import wraps
+from zoneinfo import ZoneInfo
 
-from flask import Blueprint, abort, flash, make_response, redirect, render_template, request, session, url_for
+from flask import (
+    Blueprint, abort, current_app, flash, make_response, redirect, render_template, request, session, url_for,
+)
 from flask_login import current_user, login_required
 
 from app import db
-from app.models import Staff, active_admin_count
+from app.audit import EVENT_TYPES, log_event
+from app.models import AuditEvent, Staff, active_admin_count, as_utc
 from app.passwords import generate_temp_password, username_problem
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -76,6 +81,7 @@ def create_staff():
     staff.set_password(temp_password)
     db.session.add(staff)
     db.session.commit()
+    log_event("account_created", staff.username, f"role: {staff.role.lower()}")
     show_temp_password(staff, temp_password, "Account created")
     return redirect(url_for("admin.staff_list"))
 
@@ -90,6 +96,7 @@ def deactivate(staff_id):
         return refuse("This is the last active admin, so it can't be deactivated.")
     staff.is_active = False
     db.session.commit()
+    log_event("account_deactivated", staff.username)
     return done(f"Deactivated {staff.username}.")
 
 
@@ -99,6 +106,7 @@ def reactivate(staff_id):
     staff = find_staff(staff_id)
     staff.is_active = True
     db.session.commit()
+    log_event("account_reactivated", staff.username)
     return done(f"Reactivated {staff.username}.")
 
 
@@ -108,6 +116,7 @@ def unlock(staff_id):
     staff = find_staff(staff_id)
     staff.unlock()
     db.session.commit()
+    log_event("account_unlocked", staff.username)
     return done(f"Unlocked {staff.username}.")
 
 
@@ -117,6 +126,7 @@ def promote(staff_id):
     staff = find_staff(staff_id)
     staff.is_admin = True
     db.session.commit()
+    log_event("role_changed", staff.username, "now admin")
     return done(f"{staff.username} is now an admin.")
 
 
@@ -130,6 +140,7 @@ def demote(staff_id):
         return refuse("This is the last active admin, so it can't be demoted.")
     staff.is_admin = False
     db.session.commit()
+    log_event("role_changed", staff.username, "now staff")
     return done(f"{staff.username} is no longer an admin.")
 
 
@@ -144,5 +155,63 @@ def reset_password(staff_id):
     staff.must_change_password = True
     staff.unlock()  # a reset is usually the fix for someone locked out
     db.session.commit()
+    log_event("password_reset", staff.username)
     show_temp_password(staff, temp_password, "Password reset")
     return redirect(url_for("admin.staff_list"))
+
+
+AUDIT_PER_PAGE = 50
+
+
+@admin_bp.route("/audit")
+@admin_required
+def audit_log():
+    # ?type= filters to one event type; anything unknown shows every event
+    event_type = request.args.get("type", "")
+    if event_type not in EVENT_TYPES:
+        event_type = ""
+    try:
+        page = max(int(request.args.get("page", 1)), 1)
+    except ValueError:
+        page = 1
+
+    query = db.select(AuditEvent)
+    if event_type:
+        query = query.where(AuditEvent.event_type == event_type)
+    total = db.session.scalar(db.select(db.func.count()).select_from(query.subquery()))
+    page_count = max(1, math.ceil(total / AUDIT_PER_PAGE))
+    page = min(page, page_count)
+    events = db.session.scalars(
+        query.order_by(AuditEvent.timestamp.desc(), AuditEvent.id.desc())
+        .offset((page - 1) * AUDIT_PER_PAGE)
+        .limit(AUDIT_PER_PAGE)
+    ).all()
+
+    # Stored in UTC; shown in the mailroom's own time zone
+    zone = ZoneInfo(current_app.config["APP_TIMEZONE"])
+    rows = [
+        {
+            "when": as_utc(event.timestamp).astimezone(zone).strftime("%b %d, %Y, %H:%M:%S"),
+            "staff": event.staff_username,
+            "label": EVENT_TYPES.get(event.event_type, event.event_type),
+            "target": event.target,
+            "details": event.details,
+        }
+        for event in events
+    ]
+
+    def page_url(number):
+        return url_for("admin.audit_log", **{"type": event_type or None, "page": number if number > 1 else None})
+
+    return render_template(
+        "admin_audit.html",
+        rows=rows,
+        event_types=EVENT_TYPES,
+        selected=event_type,
+        total=total,
+        page=page,
+        page_count=page_count,
+        previous_url=page_url(page - 1) if page > 1 else None,
+        next_url=page_url(page + 1) if page < page_count else None,
+        timezone_name=current_app.config["APP_TIMEZONE"],
+    )

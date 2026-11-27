@@ -137,3 +137,26 @@ class Package(db.Model):
 
     def __repr__(self):
         return f"<Package {self.carrier} {self.tracking_number} ({self.status})>"
+
+
+class AuditEvent(db.Model):
+    """One line of the audit log: who did what, and to what.
+
+    Rows hold only short, non-sensitive text. Never a password, token, student
+    ID, name or note. Use app.audit.log_event to write them.
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(db.DateTime, nullable=False, default=utc_now, index=True)
+    # The account's id, if any; and a copy of its name so the row still makes
+    # sense after the account is renamed, changed or removed
+    staff_id = db.Column(db.Integer, db.ForeignKey("staff.id"), nullable=True)
+    staff_username = db.Column(db.String(80), nullable=True)
+    event_type = db.Column(db.String(40), nullable=False, index=True)
+    # Short: the last 8 characters of a tracking number, or a username
+    target = db.Column(db.String(100), nullable=True)
+    details = db.Column(db.String(200), nullable=True)
+    ip_address = db.Column(db.String(45), nullable=True)
+
+    def __repr__(self):
+        return f"<AuditEvent {self.event_type} {self.target or ''}>"

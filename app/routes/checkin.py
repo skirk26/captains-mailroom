@@ -7,6 +7,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app import db
+from app.audit import log_event, tracking_target
 from app.models import PACKAGE_ID, SQLITE_MAX_INTEGER, Package, Recipient
 from app.photos import PhotoRejected, delete_photo, photo_exists, prepare_photo, store_photo
 
@@ -241,6 +242,7 @@ def save_checkin():
         db.session.rollback()
         return render_confirm(submitted, [DUPLICATE_MESSAGE])
 
+    log_event("package_checked_in", tracking_target(package.tracking_number), package.carrier)
     flash(f"Package {cleaned['tracking']} checked in", "success")
     # Next: photograph where it's stored (or skip)
     return redirect(url_for("checkin.photo", package_id=package.id))
@@ -325,6 +327,7 @@ def upload_photo(package_id):
         delete_photo(filename)
         return photo_error(PICKED_UP_MESSAGE, 409)
 
+    log_event("photo_uploaded", tracking_target(package.tracking_number), "replaced" if old_filename else "new")
     # The new photo is saved and recorded, so the one it replaces can go
     if old_filename != filename:
         delete_photo(old_filename)

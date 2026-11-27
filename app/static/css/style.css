@@ -786,3 +786,19 @@ a.activity-row {
   font-size: var(--text-headline);
   user-select: all;
 }
+
+/* Audit log: the event name, then who and when, then the target */
+.audit-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+}
+
+.audit-event {
+  font-weight: var(--weight-semibold);
+}
+
+.audit-row > .footnote {
+  overflow-wrap: anywhere;
+}
