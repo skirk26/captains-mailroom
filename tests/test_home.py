@@ -224,7 +224,7 @@ def test_empty_home(client):
     page = home(client)
     assert stats(page) == {"Checked in": "0", "Picked up": "0", "Waiting": "0"}
     assert "No activity yet" in page
-    assert re.search(r'<a href="/checkin" class="btn btn-primary">.*?Check in a package', page, re.S)
+    assert "Check in a package" not in page  # the Check In tile and tab are right there
 
 
 @pytest.mark.parametrize("seconds, text", [

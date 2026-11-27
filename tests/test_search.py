@@ -274,6 +274,7 @@ def test_count_line_is_in_a_live_region(client, seeded):
 def test_no_packages_at_all(client):
     page = search(client)
     assert "No packages yet" in page
+    assert "Check in a package" not in page
     assert "Showing" not in page
 
 
